@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Career Orientation
-Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, and reports.
-Version: 3.6
+Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, reports, and unique one-time quiz links.
+Version: 3.7
 Author: xAI
 License: GPL2
 Text Domain: career-orientation
@@ -19,10 +19,11 @@ add_action('plugins_loaded', 'co_load_textdomain');
 
 function co_install() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'co_results';
     $charset_collate = $wpdb->get_charset_collate();
 
-    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+    // Таблица для результатов теста
+    $table_results = $wpdb->prefix . 'co_results';
+    $sql_results = "CREATE TABLE IF NOT EXISTS $table_results (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id BIGINT(20) UNSIGNED DEFAULT 0,
         quiz_id BIGINT(20) UNSIGNED NOT NULL,
@@ -34,8 +35,25 @@ function co_install() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
+    // Таблица для уникальных ссылок
+    $table_links = $wpdb->prefix . 'co_unique_links';
+    $sql_links = "CREATE TABLE IF NOT EXISTS $table_links (
+        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        quiz_id BIGINT(20) UNSIGNED NOT NULL,
+        token VARCHAR(64) NOT NULL,
+        full_name VARCHAR(255) NOT NULL DEFAULT '',
+        phone VARCHAR(50) NOT NULL DEFAULT '',
+        email VARCHAR(100) NOT NULL DEFAULT '',
+        is_used BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        used_at DATETIME DEFAULT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY token (token)
+    ) $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    dbDelta($sql_results);
+    dbDelta($sql_links);
 
     flush_rewrite_rules();
 }
@@ -142,6 +160,14 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-menu',
+        __('Unique Links', 'career-orientation'),
+        __('Unique Links', 'career-orientation'),
+        'manage_options',
+        'co-unique-links',
+        'co_unique_links_page'
+    );
+    add_submenu_page(
+        'co-menu',
         __('Categories', 'career-orientation'),
         __('Categories', 'career-orientation'),
         'manage_options',
@@ -182,6 +208,16 @@ function co_admin_styles() {
             flex: 0 0 auto;
             margin: 0;
         }
+        .co-unique-links-table th, .co-unique-links-table td {
+            padding: 10px;
+            vertical-align: middle;
+        }
+        .co-unique-links-table .column-token {
+            width: 30%;
+        }
+        .co-unique-links-table .column-status {
+            width: 15%;
+        }
     </style>
     <?php
 }
@@ -191,57 +227,223 @@ function co_admin_scripts() {
     ?>
     <script>
         jQuery(document).ready(function($) {
-            if ($('#toplevel_page_co-menu').hasClass('wp-menu-open') === false && ['edit-tags.php'].includes(window.location.pathname.split('/').pop())) {
+            if ($('#toplevel_page_co-menu').hasClass('wp-menu-open') === false && ['edit-tags.php', 'admin.php'].includes(window.location.pathname.split('/').pop())) {
                 $('#toplevel_page_co-menu').addClass('wp-menu-open wp-has-current-submenu');
                 $('#toplevel_page_co-menu a.wp-has-current-submenu').addClass('current');
             }
+            $('.co-generate-link').click(function() {
+                var quiz_id = $('#co-quiz-select').val();
+                if (!quiz_id) {
+                    alert('<?php _e('Please select a quiz.', 'career-orientation'); ?>');
+                    return;
+                }
+                $.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'co_generate_unique_link',
+                        quiz_id: quiz_id,
+                        nonce: '<?php echo wp_create_nonce('co_generate_link_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php _e('Error generating link.', 'career-orientation'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Error generating link. Please try again.', 'career-orientation'); ?>');
+                    }
+                });
+            });
         });
     </script>
     <?php
 }
 add_action('admin_footer', 'co_admin_scripts');
 
-function co_overview_page() {
+function co_unique_links_page() {
     if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
     }
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_unique_links';
+    $quizzes = get_posts(['post_type' => 'co_quiz', 'posts_per_page' => -1]);
+    $links = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC");
     ?>
     <div class="wrap">
-        <h1><?php _e('Career Orientation', 'career-orientation'); ?></h1>
-        <h2><?php _e('Описание плагина', 'career-orientation'); ?></h2>
-        <p><?php _e('Плагин "Career Orientation" предназначен для создания и управления тестами профориентации. Он позволяет создавать вопросы с различными типами ответов, организовывать их в опросы, присваивать категории и рубрики, а также анализировать результаты.', 'career-orientation'); ?></p>
-        <h3><?php _e('Как работать с плагином', 'career-orientation'); ?></h3>
-        <ul>
-            <li><strong><?php _e('Questions', 'career-orientation'); ?></strong>: <?php _e('Создавайте вопросы в разделе "Questions". Выберите тип вопроса:', 'career-orientation'); ?>
-                <ul>
-                    <li><strong><?php _e('Multiple Choice', 'career-orientation'); ?></strong>: <?php _e('множественный выбор (чекбоксы), до 50 ответов с весами.', 'career-orientation'); ?></li>
-                    <li><strong><?php _e('Select', 'career-orientation'); ?></strong>: <?php _e('одиночный выбор (радиокнопки), до 50 ответов с весами.', 'career-orientation'); ?></li>
-                    <li><strong><?php _e('Text', 'career-orientation'); ?></strong>: <?php _e('текстовый ввод (без весов).', 'career-orientation'); ?></li>
-                </ul>
-                <?php _e('Укажите, является ли вопрос обязательным. Назначьте категории для аналитики.', 'career-orientation'); ?>
-            </li>
-            <li><strong><?php _e('Quizzes', 'career-orientation'); ?></strong>: <?php _e('В разделе "Quizzes" создавайте опросы, добавляя существующие или новые вопросы. Настройте отображение результатов и переход назад. После сохранения опроса вы увидите шорткод для его публикации.', 'career-orientation'); ?></li>
-            <li><strong><?php _e('Categories', 'career-orientation'); ?></strong>: <?php _e('Создавайте категории вопросов в разделе "Categories" для группировки и анализа.', 'career-orientation'); ?></li>
-            <li><strong><?php _e('Rubrics', 'career-orientation'); ?></strong>: <?php _e('Назначайте рубрики опросам в разделе "Rubrics" для классификации.', 'career-orientation'); ?></li>
-            <li><strong><?php _e('Analytics', 'career-orientation'); ?></strong>: <?php _e('Просматривайте статистику ответов в разделе "Analytics" с фильтрами по рубрикам, категориям и датам.', 'career-orientation'); ?></li>
-            <li><strong><?php _e('Reports', 'career-orientation'); ?></strong>: <?php _e('Анализируйте результаты пользователей в разделе "Reports" с фильтрами по пользователям, опросам и датам.', 'career-orientation'); ?></li>
-        </ul>
-        <h3><?php _e('Как использовать шорткод', 'career-orientation'); ?></h3>
-        <p><?php _e('Для публикации опроса используйте шорткод <code>[career_quiz id="X"]</code>, где <code>X</code> — ID опроса. Шорткод отображается в форме редактирования опроса. Вставьте его в любую страницу или пост.', 'career-orientation'); ?></p>
-        <h3><?php _e('Пример', 'career-orientation'); ?></h3>
-        <p><?php _e('Создайте опрос с ID 5, затем добавьте на страницу: <code>[career_quiz id="5"]</code>. Пользователи смогут пройти тест, а результаты сохранятся для анализа.', 'career-orientation'); ?></p>
-        <h2><?php _e('Разделы', 'career-orientation'); ?></h2>
-        <ul>
-            <li><a href="<?php echo admin_url('edit.php?post_type=co_question'); ?>"><?php _e('Questions', 'career-orientation'); ?></a></li>
-            <li><a href="<?php echo admin_url('edit.php?post_type=co_quiz'); ?>"><?php _e('Quizzes', 'career-orientation'); ?></a></li>
-            <li><a href="<?php echo admin_url('edit-tags.php?taxonomy=co_category&post_type=co_question'); ?>"><?php _e('Categories', 'career-orientation'); ?></a></li>
-            <li><a href="<?php echo admin_url('edit-tags.php?taxonomy=co_rubric&post_type=co_quiz'); ?>"><?php _e('Rubrics', 'career-orientation'); ?></a></li>
-            <li><a href="<?php echo admin_url('admin.php?page=co-analytics'); ?>"><?php _e('Analytics', 'career-orientation'); ?></a></li>
-            <li><a href="<?php echo admin_url('admin.php?page=co-reports'); ?>"><?php _e('Reports', 'career-orientation'); ?></a></li>
-        </ul>
+        <h1><?php _e('Unique Links', 'career-orientation'); ?></h1>
+        <p><?php _e('Generate unique one-time links for quizzes.', 'career-orientation'); ?></p>
+        <p>
+            <label><?php _e('Select Quiz:', 'career-orientation'); ?></label>
+            <select id="co-quiz-select">
+                <option value=""><?php _e('Select a quiz', 'career-orientation'); ?></option>
+                <?php foreach ($quizzes as $quiz) : ?>
+                <option value="<?php echo esc_attr($quiz->ID); ?>"><?php echo esc_html($quiz->post_title); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button class="button co-generate-link"><?php _e('Generate Link', 'career-orientation'); ?></button>
+        </p>
+        <table class="wp-list-table widefat fixed striped co-unique-links-table">
+            <thead>
+                <tr>
+                    <th><?php _e('Quiz', 'career-orientation'); ?></th>
+                    <th class="column-token"><?php _e('Link', 'career-orientation'); ?></th>
+                    <th><?php _e('Full Name', 'career-orientation'); ?></th>
+                    <th><?php _e('Phone', 'career-orientation'); ?></th>
+                    <th><?php _e('Email', 'career-orientation'); ?></th>
+                    <th class="column-status"><?php _e('Status', 'career-orientation'); ?></th>
+                    <th><?php _e('Created At', 'career-orientation'); ?></th>
+                    <th><?php _e('Used At', 'career-orientation'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($links as $link) : 
+                    $quiz = get_post($link->quiz_id);
+                    $link_url = add_query_arg('co_quiz_token', $link->token, home_url('/quiz-entry/'));
+                ?>
+                <tr>
+                    <td><?php echo $quiz ? esc_html($quiz->post_title) : __('Unknown Quiz', 'career-orientation'); ?></td>
+                    <td><a href="<?php echo esc_url($link_url); ?>"><?php echo esc_html($link_url); ?></a></td>
+                    <td><?php echo esc_html($link->full_name); ?></td>
+                    <td><?php echo esc_html($link->phone); ?></td>
+                    <td><?php echo esc_html($link->email); ?></td>
+                    <td><?php echo $link->is_used ? __('Used', 'career-orientation') : __('Not Used', 'career-orientation'); ?></td>
+                    <td><?php echo esc_html($link->created_at); ?></td>
+                    <td><?php echo $link->used_at ? esc_html($link->used_at) : '-'; ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
     <?php
 }
+
+function co_generate_unique_link() {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_generate_link_nonce')) {
+        wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
+        return;
+    }
+    global $wpdb;
+    $quiz_id = intval($_POST['quiz_id']);
+    if (!$quiz_id || !get_post($quiz_id) || get_post($quiz_id)->post_type !== 'co_quiz') {
+        wp_send_json_error(['message' => __('Invalid quiz ID', 'career-orientation')]);
+        return;
+    }
+    $token = wp_generate_uuid4();
+    $table_name = $wpdb->prefix . 'co_unique_links';
+    $result = $wpdb->insert($table_name, [
+        'quiz_id' => $quiz_id,
+        'token' => $token,
+        'is_used' => 0,
+        'created_at' => current_time('mysql'),
+    ]);
+    if ($result === false) {
+        wp_send_json_error(['message' => __('Database error', 'career-orientation')]);
+        return;
+    }
+    wp_send_json_success();
+}
+add_action('wp_ajax_co_generate_unique_link', 'co_generate_unique_link');
+
+function co_quiz_entry_shortcode($atts) {
+    $token = isset($_GET['co_quiz_token']) ? sanitize_text_field($_GET['co_quiz_token']) : '';
+    if (!$token) {
+        return __('Invalid or missing quiz token.', 'career-orientation');
+    }
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_unique_links';
+    $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s", $token));
+    if (!$link) {
+        return __('Invalid quiz token.', 'career-orientation');
+    }
+    if ($link->is_used) {
+        return __('This quiz link has already been used.', 'career-orientation');
+    }
+    wp_enqueue_script('co-quiz-entry-script', plugin_dir_url(__FILE__) . 'quiz-entry.js', ['jquery'], '3.7', true);
+    wp_localize_script('co-quiz-entry-script', 'coQuizEntry', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('co_quiz_entry_nonce'),
+        'quiz_id' => $link->quiz_id,
+        'token' => $token,
+        'translations' => [
+            'please_fill_all_fields' => __('Please fill in all fields.', 'career-orientation'),
+            'invalid_email' => __('Invalid email address.', 'career-orientation'),
+            'error_submitting' => __('Error submitting data. Please try again.', 'career-orientation'),
+        ],
+    ]);
+    ob_start();
+    ?>
+    <div id="co-quiz-entry" class="co-quiz-container">
+        <h2><?php _e('Enter Your Details', 'career-orientation'); ?></h2>
+        <div id="co-quiz-entry-form">
+            <p>
+                <label><?php _e('Full Name:', 'career-orientation'); ?></label>
+                <input type="text" id="co-full-name" required>
+            </p>
+            <p>
+                <label><?php _e('Phone:', 'career-orientation'); ?></label>
+                <input type="tel" id="co-phone" required>
+            </p>
+            <p>
+                <label><?php _e('Email:', 'career-orientation'); ?></label>
+                <input type="email" id="co-email" required>
+            </p>
+            <button type="button" id="co-submit-entry"><?php _e('Continue', 'career-orientation'); ?></button>
+        </div>
+        <div id="co-quiz-content" style="display:none;">
+            <?php echo do_shortcode('[career_quiz id="' . esc_attr($link->quiz_id) . '"]'); ?>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('co_quiz_entry', 'co_quiz_entry_shortcode');
+
+function co_handle_quiz_entry() {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_entry_nonce')) {
+        wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
+        return;
+    }
+    $token = sanitize_text_field($_POST['token']);
+    $full_name = sanitize_text_field($_POST['full_name']);
+    $phone = sanitize_text_field($_POST['phone']);
+    $email = sanitize_email($_POST['email']);
+    if (!$full_name || !$phone || !$email) {
+        wp_send_json_error(['message' => __('Please fill in all fields.', 'career-orientation')]);
+        return;
+    }
+    if (!is_email($email)) {
+        wp_send_json_error(['message' => __('Invalid email address.', 'career-orientation')]);
+        return;
+    }
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_unique_links';
+    $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s", $token));
+    if (!$link) {
+        wp_send_json_error(['message' => __('Invalid quiz token.', 'career-orientation')]);
+        return;
+    }
+    if ($link->is_used) {
+        wp_send_json_error(['message' => __('This quiz link has already been used.', 'career-orientation')]);
+        return;
+    }
+    $result = $wpdb->update($table_name, [
+        'full_name' => $full_name,
+        'phone' => $phone,
+        'email' => $email,
+        'is_used' => 1,
+        'used_at' => current_time('mysql'),
+    ], ['token' => $token]);
+    if ($result === false) {
+        wp_send_json_error(['message' => __('Database error.', 'career-orientation')]);
+        return;
+    }
+    wp_send_json_success();
+}
+add_action('wp_ajax_co_quiz_entry', 'co_handle_quiz_entry');
+add_action('wp_ajax_nopriv_co_quiz_entry', 'co_handle_quiz_entry');
 
 function co_add_question_meta_boxes() {
     add_meta_box(
@@ -287,6 +489,8 @@ function co_quiz_shortcode_meta_box($post) {
     ?>
     <p><?php _e('Use this shortcode to publish the quiz:', 'career-orientation'); ?></p>
     <code>[career_quiz id="<?php echo esc_attr($post->ID); ?>"]</code>
+    <p><?php _e('Use this shortcode for unique one-time link entry:', 'career-orientation'); ?></p>
+    <code>[co_quiz_entry]</code>
     <?php
 }
 
@@ -917,7 +1121,7 @@ function co_quiz_shortcode($atts) {
     }
     $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
     $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.php', ['jquery'], '3.6', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.php', ['jquery'], '3.7', true);
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'quiz_id' => $quiz_id,
@@ -1045,9 +1249,33 @@ add_action('wp_ajax_co_quiz_submit', 'co_handle_quiz_submission');
 add_action('wp_ajax_nopriv_co_quiz_submit', 'co_handle_quiz_submission');
 
 function co_enqueue_assets() {
-    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.6');
+    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.7');
     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', [], '4.4.2', true);
 }
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');
 add_action('admin_enqueue_scripts', 'co_enqueue_assets');
+
+// Добавление пользовательской конечной точки для страницы ввода данных
+function co_add_quiz_entry_endpoint() {
+    add_rewrite_rule(
+        '^quiz-entry/?$',
+        'index.php?co_quiz_entry=1',
+        'top'
+    );
+}
+add_action('init', 'co_add_quiz_entry_endpoint');
+
+function co_query_vars($vars) {
+    $vars[] = 'co_quiz_entry';
+    return $vars;
+}
+add_filter('query_vars', 'co_query_vars');
+
+function co_template_redirect() {
+    if (get_query_var('co_quiz_entry')) {
+        echo do_shortcode('[co_quiz_entry]');
+        exit;
+    }
+}
+add_action('template_redirect', 'co_template_redirect');
 ?>
