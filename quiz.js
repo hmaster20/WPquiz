@@ -1,18 +1,22 @@
 jQuery(document).ready(function($) {
+    console.log('quiz.js loaded');
     if (typeof coQuiz === 'undefined') {
         console.error('coQuiz is not defined');
-        $('#co-quiz-' + <?php echo json_encode($quiz_id); ?>).html('<p><?php _e('Error loading quiz. Please try again.', 'career-orientation'); ?></p>');
+        $('.co-quiz-container').html('<p><?php _e('Error loading quiz. Please try again.', 'career-orientation'); ?></p>');
         return;
     }
+    console.log('coQuiz data:', coQuiz);
 
     var quiz = coQuiz;
     var currentQuestionIndex = 0;
     var answers = {};
 
     function showQuestion(index) {
+        console.log('showQuestion: index=' + index);
         var question = quiz.questions[index];
         if (!question) {
             console.error('Question not found at index: ' + index);
+            $('.co-quiz-container').html('<p><?php _e('Error: Question not found.', 'career-orientation'); ?></p>');
             return;
         }
         var html = '<div class="co-question active" data-question-id="' + question.id + '">';
@@ -21,7 +25,15 @@ jQuery(document).ready(function($) {
         if (question.type === 'text') {
             html += '<textarea name="co_answer_' + question.id + '" ' + (question.required ? 'required' : '') + ' placeholder="<?php _e('Enter your answer', 'career-orientation'); ?>"></textarea>';
         } else {
+            if (!question.answers || !Array.isArray(question.answers)) {
+                console.error('Invalid answers for question ID: ' + question.id);
+                return;
+            }
             $.each(question.answers, function(ansIndex, answer) {
+                if (!answer.text) {
+                    console.warn('Missing answer text for question ID: ' + question.id + ', index: ' + ansIndex);
+                    return;
+                }
                 html += '<label>';
                 html += '<input type="' + (question.type === 'multiple_choice' ? 'checkbox' : 'radio') + '" ' +
                         'name="co_answer_' + question.id + (question.type === 'multiple_choice' ? '[]' : '') + '" ' +
@@ -51,6 +63,7 @@ jQuery(document).ready(function($) {
             $('input[name="co_answer_' + question.id + '[]"]:checked').map(function() { return $(this).val(); }).get() :
             $('input[name="co_answer_' + question.id + '"]:checked, textarea[name="co_answer_' + question.id + '"]').val();
         answers[question.id] = answer;
+        console.log('saveAnswer: question_id=' + question.id + ', answer=' + JSON.stringify(answer));
     }
 
     $(document).on('click', '.co-next-question', function() {
@@ -82,6 +95,7 @@ jQuery(document).ready(function($) {
                     answer: answers[question.id]
                 },
                 success: function(response) {
+                    console.log('AJAX success:', response);
                     if (response.success) {
                         currentQuestionIndex++;
                         showQuestion(currentQuestionIndex);
@@ -91,7 +105,7 @@ jQuery(document).ready(function($) {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('AJAX error:', error);
+                    console.error('AJAX error:', error, xhr.responseText);
                     alert('<?php _e('Error submitting answer. Please try again.', 'career-orientation'); ?>');
                 }
             });
@@ -107,6 +121,7 @@ jQuery(document).ready(function($) {
                     answer: answers[question.id]
                 },
                 success: function(response) {
+                    console.log('Final submission success:', response);
                     if (response.success) {
                         var totalScore = 0;
                         $.each(quiz.questions, function(index, q) {
@@ -132,7 +147,7 @@ jQuery(document).ready(function($) {
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('Final submission AJAX error:', error);
+                    console.error('Final submission AJAX error:', error, xhr.responseText);
                     alert('<?php _e('Error completing quiz. Please try again.', 'career-orientation'); ?>');
                 }
             });
@@ -147,9 +162,11 @@ jQuery(document).ready(function($) {
         }
     });
 
-    if (quiz.questions.length > 0) {
+    if (quiz.questions && quiz.questions.length > 0) {
+        console.log('Starting quiz with ' + quiz.questions.length + ' questions');
         showQuestion(currentQuestionIndex);
     } else {
-        $('#co-quiz-' + quiz.quiz_id).html('<p><?php _e('No questions available for this quiz.', 'career-orientation'); ?></p>');
+        console.error('No questions available for quiz_id=' + quiz.quiz_id);
+        $('.co-quiz-container').html('<p><?php _e('No questions available for this quiz.', 'career-orientation'); ?></p>');
     }
 });
