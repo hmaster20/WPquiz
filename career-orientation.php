@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Career Orientation
-Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, reports, and unique one-time quiz links.
+Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, reports, and one-time quiz links.
 Version: 3.7
 Author: xAI
 License: GPL2
@@ -35,10 +35,10 @@ function co_install() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
-    // Таблица для уникальных ссылок
+    // Таблица для ссылок
     $table_links = $wpdb->prefix . 'co_unique_links';
     $sql_links = "CREATE TABLE IF NOT EXISTS $table_links (
-        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        id BIGINT(20) UNIQUE NOT NULL AUTO_INCREMENT,
         quiz_id BIGINT(20) UNSIGNED NOT NULL,
         token VARCHAR(64) NOT NULL,
         full_name VARCHAR(255) NOT NULL DEFAULT '',
@@ -55,9 +55,26 @@ function co_install() {
     dbDelta($sql_results);
     dbDelta($sql_links);
 
+    // Добавление страницы quiz-entry
+    $page = get_page_by_path('quiz-entry');
+    if (!$page) {
+        wp_insert_post([
+            'post_title' => 'Quiz Entry',
+            'post_name' => 'quiz-entry',
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_content' => '[co_quiz_entry]'
+        ]);
+    }
+
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'co_install');
+
+function co_deactivation() {
+    flush_rewrite_rules();
+}
+register_deactivation_hook(__FILE__, 'co_deactivation');
 
 function co_register_types() {
     register_post_type('co_question', [
@@ -160,10 +177,10 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-menu',
-        __('Unique Links', 'career-orientation'),
-        __('Unique Links', 'career-orientation'),
+        __('Links', 'career-orientation'),
+        __('Links', 'career-orientation'),
         'manage_options',
-        'co-unique-links',
+        'co-links',
         'co_unique_links_page'
     );
     add_submenu_page(
@@ -273,8 +290,8 @@ function co_unique_links_page() {
     $links = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC");
     ?>
     <div class="wrap">
-        <h1><?php _e('Unique Links', 'career-orientation'); ?></h1>
-        <p><?php _e('Generate unique one-time links for quizzes.', 'career-orientation'); ?></p>
+        <h1><?php _e('Links', 'career-orientation'); ?></h1>
+        <p><?php _e('Generate one-time links for quizzes.', 'career-orientation'); ?></p>
         <p>
             <label><?php _e('Select Quiz:', 'career-orientation'); ?></label>
             <select id="co-quiz-select">
@@ -489,7 +506,7 @@ function co_quiz_shortcode_meta_box($post) {
     ?>
     <p><?php _e('Use this shortcode to publish the quiz:', 'career-orientation'); ?></p>
     <code>[career_quiz id="<?php echo esc_attr($post->ID); ?>"]</code>
-    <p><?php _e('Use this shortcode for unique one-time link entry:', 'career-orientation'); ?></p>
+    <p><?php _e('Use this shortcode for one-time link entry:', 'career-orientation'); ?></p>
     <code>[co_quiz_entry]</code>
     <?php
 }
@@ -501,13 +518,13 @@ function co_quiz_settings_meta_box($post) {
     ?>
     <p>
         <label>
-            <input type="checkbox" name="co_show_results" value="yes" <?php checked($show_results); ?>>
+            <input type="checkbox" name="co_show_results" value="yes" <?php checked($show_results); ?>
             <?php _e('Show quiz results', 'career-orientation'); ?>
         </label>
     </p>
     <p>
         <label>
-            <input type="checkbox" name="co_allow_back" value="yes" <?php checked($allow_back); ?>>
+            <input type="checkbox" name="co_allow_back" value="yes" <?php checked($allow_back); ?>
             <?php _e('Allow going back to previous questions', 'career-orientation'); ?>
         </label>
     </p>
@@ -524,14 +541,14 @@ function co_answers_meta_box($post) {
         <p>
             <label><?php _e('Question Type:', 'career-orientation'); ?></label>
             <select name="co_question_type" id="co-question-type">
-                <option value="select" <?php selected($question_type, 'select'); ?>><?php _e('Select (Single Choice)', 'career-orientation'); ?></option>
-                <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?>><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                <option value="text" <?php selected($question_type, 'text'); ?>><?php _e('Text', 'career-orientation'); ?></option>
+                <option value="select" <?php selected($question_type, 'select'); ?><?php _e('Select (Single Choice)', 'career-orientation'); ?></option>
+                <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?><?php _e('Multiple Choice', 'career-orientation'); ?></option>
+                <option value="text" <?php selected($question_type, 'text'); ?><?php _e('Text', 'career-orientation'); ?></option>
             </select>
         </p>
         <p>
             <label>
-                <input type="checkbox" name="co_required" value="yes" <?php checked($required); ?>>
+                <input type="checkbox" name="co_required" value="yes" <?php checked($required); ?>
                 <?php _e('Required question', 'career-orientation'); ?>
             </label>
         </p>
@@ -608,7 +625,7 @@ function co_quiz_questions_meta_box($post) {
         <h4><?php _e('Select Existing Questions', 'career-orientation'); ?></h4>
         <select name="co_questions[]" multiple style="width:100%;height:150px;">
             <?php foreach ($questions as $question) : ?>
-            <option value="<?php echo esc_attr($question->ID); ?>" <?php echo in_array($question->ID, $question_ids) ? 'selected' : ''; ?>>
+            <option value="<?php echo esc_attr($question->ID); ?>" <?php echo in_array($question->ID, $question_ids) ? 'selected' : ''; ?>
                 <?php echo esc_html($question->post_title); ?>
             </option>
             <?php endforeach; ?>
@@ -621,15 +638,15 @@ function co_quiz_questions_meta_box($post) {
             <div class="co-new-question">
                 <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($new_question['title']); ?>" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
                 <label>
-                    <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][required]" value="yes" <?php checked(isset($new_question['required']) && $new_question['required'] === 'yes'); ?>>
+                    <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][required]" value="yes" <?php checked(isset($new_question['required']) && $new_question['required'] === 'yes'); ?>
                     <?php _e('Required', 'career-orientation'); ?>
                 </label>
                 <p>
                     <label><?php _e('Question Type:', 'career-orientation'); ?></label>
                     <select name="co_new_questions[<?php echo esc_attr($index); ?>][type]" class="co-new-question-type">
-                        <option value="select" <?php selected($question_type, 'select'); ?>><?php _e('Select (Single Choice)', 'career-orientation'); ?></option>
-                        <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?>><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                        <option value="text" <?php selected($question_type, 'text'); ?>><?php _e('Text', 'career-orientation'); ?></option>
+                        <option value="select" <?php selected($question_type, 'select'); ?><?php _e('Select (Single Choice)', 'career-orientation'); ?></option>
+                        <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?><?php _e('Multiple Choice', 'career-orientation'); ?></option>
+                        <option value="text" <?php selected($question_type, 'text'); ?><?php _e('Text', 'career-orientation'); ?></option>
                     </select>
                 </p>
                 <div class="co-new-answers <?php echo esc_attr($question_type); ?>">
@@ -826,7 +843,7 @@ function co_analytics_page() {
                         foreach ($rubrics as $rubric) {
                             if (!is_object($rubric) || !isset($rubric->slug, $rubric->name)) continue;
                             ?>
-                            <option value="<?php echo esc_attr($rubric->slug); ?>" <?php selected($selected_rubric, $rubric->slug); ?>>
+                            <option value="<?php echo esc_attr($rubric->slug); ?>" <?php selected($selected_rubric, $rubric->slug); ?>
                                 <?php echo esc_html($rubric->name); ?>
                             </option>
                             <?php
@@ -844,7 +861,7 @@ function co_analytics_page() {
                         foreach ($categories as $category) {
                             if (!is_object($category) || !isset($category->slug, $category->name)) continue;
                             ?>
-                            <option value="<?php echo esc_attr($category->slug); ?>" <?php selected($selected_category, $category->slug); ?>>
+                            <option value="<?php echo esc_attr($category->slug); ?>" <?php selected($selected_category, $category->slug); ?>
                                 <?php echo esc_html($category->name); ?>
                             </option>
                             <?php
@@ -1018,7 +1035,7 @@ function co_reports_page() {
                 <select name="user">
                     <option value=""><?php _e('All Users', 'career-orientation'); ?></option>
                     <?php foreach ($users as $user) : ?>
-                    <option value="<?php echo esc_attr($user->ID); ?>" <?php selected($selected_user, $user->ID); ?>>
+                    <option value="<?php echo esc_attr($user->ID); ?>" <?php selected($selected_user, $user->ID); ?>
                         <?php echo esc_html($user->display_name); ?>
                     </option>
                     <?php endforeach; ?>
@@ -1029,7 +1046,7 @@ function co_reports_page() {
                 <select name="quiz">
                     <option value=""><?php _e('All Quizzes', 'career-orientation'); ?></option>
                     <?php foreach ($quizzes as $quiz) : ?>
-                    <option value="<?php echo esc_attr($quiz->ID); ?>" <?php selected($selected_quiz, $quiz->ID); ?>>
+                    <option value="<?php echo esc_attr($quiz->ID); ?>" <?php selected($selected_quiz, $quiz->ID); ?>
                         <?php echo esc_html($quiz->post_title); ?>
                     </option>
                     <?php endforeach; ?>
@@ -1258,8 +1275,8 @@ add_action('admin_enqueue_scripts', 'co_enqueue_assets');
 // Добавление пользовательской конечной точки для страницы ввода данных
 function co_add_quiz_entry_endpoint() {
     add_rewrite_rule(
-        '^quiz-entry/?$',
-        'index.php?co_quiz_entry=1',
+        'quiz-entry/?$',
+        'index.php?pagename=quiz-entry',
         'top'
     );
 }
@@ -1272,7 +1289,7 @@ function co_query_vars($vars) {
 add_filter('query_vars', 'co_query_vars');
 
 function co_template_redirect() {
-    if (get_query_var('co_quiz_entry')) {
+    if (get_query_var('pagename') === 'quiz-entry') {
         echo do_shortcode('[co_quiz_entry]');
         exit;
     }
