@@ -2,7 +2,7 @@
 /*
 Plugin Name: Career Orientation
 Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, and reports.
-Version: 3.3
+Version: 3.4
 Author: xAI
 License: GPL2
 Text Domain: career-orientation
@@ -107,34 +107,6 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-menu',
-        __('Questions', 'career-orientation'),
-        __('Questions', 'career-orientation'),
-        'manage_options',
-        'edit.php?post_type=co_question'
-    );
-    add_submenu_page(
-        'co-menu',
-        __('Quizzes', 'career-orientation'),
-        __('Quizzes', 'career-orientation'),
-        'manage_options',
-        'edit.php?post_type=co_quiz'
-    );
-    add_submenu_page(
-        'co-menu',
-        __('Categories', 'career-orientation'),
-        __('Categories', 'career-orientation'),
-        'manage_options',
-        'edit-tags.php?taxonomy=co_category&post_type=co_question'
-    );
-    add_submenu_page(
-        'co-menu',
-        __('Rubrics', 'career-orientation'),
-        __('Rubrics', 'career-orientation'),
-        'manage_options',
-        'edit-tags.php?taxonomy=co_rubric&post_type=co_quiz'
-    );
-    add_submenu_page(
-        'co-menu',
         __('Analytics', 'career-orientation'),
         __('Analytics', 'career-orientation'),
         'manage_options',
@@ -152,16 +124,49 @@ function co_admin_menu() {
 }
 add_action('admin_menu', 'co_admin_menu');
 
+function co_fix_taxonomy_menu($parent_file) {
+    global $submenu_file;
+    if (isset($_GET['taxonomy']) && in_array($_GET['taxonomy'], ['co_category', 'co_rubric']) && isset($_GET['post_type'])) {
+        $parent_file = 'co-menu';
+        $submenu_file = 'edit-tags.php?taxonomy=' . $_GET['taxonomy'] . '&post_type=' . $_GET['post_type'];
+    }
+    return $parent_file;
+}
+add_filter('parent_file', 'co_fix_taxonomy_menu');
+
 function co_admin_styles() {
     ?>
     <style>
         #toplevel_page_co-menu .wp-menu-name {
             font-weight: bold;
         }
+        .co-answer-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .co-answer-options label {
+            flex: 0 0 auto;
+            margin: 0;
+        }
     </style>
     <?php
 }
 add_action('admin_head', 'co_admin_styles');
+
+function co_admin_scripts() {
+    ?>
+    <script>
+        jQuery(document).ready(function($) {
+            if ($('#toplevel_page_co-menu').hasClass('wp-menu-open') === false && ['edit-tags.php'].includes(window.location.pathname.split('/').pop())) {
+                $('#toplevel_page_co-menu').addClass('wp-menu-open wp-has-current-submenu');
+                $('#toplevel_page_co-menu a.wp-has-current-submenu').addClass('current');
+            }
+        });
+    </script>
+    <?php
+}
+add_action('admin_footer', 'co_admin_scripts');
 
 function co_overview_page() {
     if (!current_user_can('manage_options')) {
@@ -182,7 +187,7 @@ function co_overview_page() {
                 </ul>
                 Укажите, является ли вопрос обязательным. Назначьте категории для аналитики.
             </li>
-            <li><strong>Опросы</strong>: В разделе "Quizzes" создавайте опросы, добавляя существующие или новые вопросы. После сохранения опроса вы увидите шорткод для его публикации.</li>
+            <li><strong>Опросы</strong>: В разделе "Quizzes" создавайте опросы, добавляя существующие или новые вопросы. Настройте отображение результатов и переход назад. После сохранения опроса вы увидите шорткод для его публикации.</li>
             <li><strong>Категории</strong>: Создавайте категории вопросов в разделе "Categories" для группировки и анализа.</li>
             <li><strong>Рубрики</strong>: Назначайте рубрики опросам в разделе "Rubrics" для классификации.</li>
             <li><strong>Аналитика</strong>: Просматривайте статистику ответов в разделе "Analytics" с фильтрами по рубрикам, категориям и датам.</li>
@@ -234,6 +239,14 @@ function co_add_quiz_meta_boxes() {
         'side',
         'high'
     );
+    add_meta_box(
+        'co_quiz_settings',
+        __('Quiz Settings', 'career-orientation'),
+        'co_quiz_settings_meta_box',
+        'co_quiz',
+        'side',
+        'high'
+    );
 }
 add_action('add_meta_boxes_co_quiz', 'co_add_quiz_meta_boxes');
 
@@ -241,6 +254,26 @@ function co_quiz_shortcode_meta_box($post) {
     ?>
     <p><?php _e('Use this shortcode to publish the quiz:', 'career-orientation'); ?></p>
     <code>[career_quiz id="<?php echo esc_attr($post->ID); ?>"]</code>
+    <?php
+}
+
+function co_quiz_settings_meta_box($post) {
+    wp_nonce_field('co_save_quiz_settings', 'co_quiz_settings_nonce');
+    $show_results = get_post_meta($post->ID, '_co_show_results', true) === 'yes';
+    $allow_back = get_post_meta($post->ID, '_co_allow_back', true) === 'yes';
+    ?>
+    <p>
+        <label>
+            <input type="checkbox" name="co_show_results" value="yes" <?php checked($show_results); ?>>
+            <?php _e('Show quiz results', 'career-orientation'); ?>
+        </label>
+    </p>
+    <p>
+        <label>
+            <input type="checkbox" name="co_allow_back" value="yes" <?php checked($allow_back); ?>>
+            <?php _e('Allow going back to previous questions', 'career-orientation'); ?>
+        </label>
+    </p>
     <?php
 }
 
@@ -464,7 +497,7 @@ function co_save_question($post_id) {
     $question_type = isset($_POST['co_question_type']) ? sanitize_text_field($_POST['co_question_type']) : 'select';
     update_post_meta($post_id, '_co_question_type', $question_type);
     if ($question_type !== 'text' && isset($_POST['co_answers']) && is_array($_POST['co_answers'])) {
-        $answers = array_slice($_POST['co_answers'], 0, 50); // Limit to 50 answers
+        $answers = array_slice($_POST['co_answers'], 0, 50);
         $answers = array_map(function($answer) {
             return [
                 'text' => sanitize_text_field($answer['text']),
@@ -500,7 +533,7 @@ function co_save_quiz($post_id) {
                     update_post_meta($question_id, '_co_question_type', $question_type);
                     update_post_meta($question_id, '_co_required', isset($new_question['required']) && $new_question['required'] === 'yes' ? 'yes' : 'no');
                     if ($question_type !== 'text' && !empty($new_question['answers']) && is_array($new_question['answers'])) {
-                        $answers = array_slice($new_question['answers'], 0, 50); // Limit to 50 answers
+                        $answers = array_slice($new_question['answers'], 0, 50);
                         $answers = array_map(function($answer) {
                             return [
                                 'text' => sanitize_text_field($answer['text']),
@@ -520,6 +553,12 @@ function co_save_quiz($post_id) {
     } else {
         delete_post_meta($post_id, '_co_new_questions');
     }
+
+    if (!isset($_POST['co_quiz_settings_nonce']) || !wp_verify_nonce($_POST['co_quiz_settings_nonce'], 'co_save_quiz_settings')) {
+        return;
+    }
+    update_post_meta($post_id, '_co_show_results', isset($_POST['co_show_results']) && $_POST['co_show_results'] === 'yes' ? 'yes' : 'no');
+    update_post_meta($post_id, '_co_allow_back', isset($_POST['co_allow_back']) && $_POST['co_allow_back'] === 'yes' ? 'yes' : 'no');
 }
 add_action('save_post_co_quiz', 'co_save_quiz');
 
@@ -825,81 +864,83 @@ function co_quiz_shortcode($atts) {
         'posts_per_page' => -1,
         'orderby' => 'post__in',
     ]);
+    if (empty($questions)) return __('No questions available for this quiz.', 'career-orientation');
+    $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
+    $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.4', true);
+    wp_localize_script('co-quiz-script', 'coQuiz', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'quiz_id' => $quiz_id,
+        'questions' => array_map(function($question) {
+            $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
+            return [
+                'id' => $question->ID,
+                'title' => $question->post_title,
+                'type' => get_post_meta($question->ID, '_co_question_type', true) ?: 'select',
+                'required' => get_post_meta($question->ID, '_co_required', true) === 'yes',
+                'answers' => $answers,
+            ];
+        }, $questions),
+        'allow_back' => $allow_back,
+        'nonce' => wp_create_nonce('co_quiz_nonce'),
+    ]);
     ob_start();
     ?>
-    <form id="co-quiz-form-<?php echo esc_attr($quiz_id); ?>" class="co-quiz-form" method="post">
-        <input type="hidden" name="co_quiz_id" value="<?php echo esc_attr($quiz_id); ?>">
-        <?php foreach ($questions as $question) : 
-            $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
-            $required = get_post_meta($question->ID, '_co_required', true) === 'yes';
-            $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'select';
-        ?>
-        <div class="co-question">
-            <h3><?php echo esc_html($question->post_title); ?></h3>
-            <?php if ($question_type === 'text') : ?>
-                <textarea name="co_answer[<?php echo esc_attr($question->ID); ?>]" <?php echo $required ? 'required' : ''; ?> placeholder="<?php _e('Enter your answer', 'career-orientation'); ?>"></textarea>
-            <?php else : ?>
-                <?php foreach ($answers as $ans_index => $answer) : ?>
-                <label>
-                    <input type="<?php echo $question_type === 'multiple_choice' ? 'checkbox' : 'radio'; ?>" 
-                           name="co_answer[<?php echo esc_attr($question->ID); ?>]<?php echo $question_type === 'multiple_choice' ? '[]' : ''; ?>" 
-                           value="<?php echo esc_attr($ans_index); ?>" 
-                           <?php echo $required && $question_type === 'select' ? 'required' : ''; ?>>
-                    <?php echo esc_html($answer['text']); ?>
-                </label><br>
-                <?php endforeach; ?>
-            <?php endif; ?>
+    <div id="co-quiz-<?php echo esc_attr($quiz_id); ?>" class="co-quiz-container">
+        <div id="co-quiz-questions"></div>
+        <div id="co-quiz-thank-you" style="display:none;">
+            <p><?php _e('Thank you for completing the quiz!', 'career-orientation'); ?></p>
         </div>
-        <?php endforeach; ?>
-        <input type="submit" value="<?php _e('Submit Quiz', 'career-orientation'); ?>">
-    </form>
+        <div id="co-quiz-results" style="display:none;"></div>
+    </div>
     <?php
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['co_quiz_id']) && intval($_POST['co_quiz_id']) === $quiz_id) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'co_results';
-        $user_id = get_current_user_id();
-        $total_score = 0;
-        foreach ($_POST['co_answer'] as $question_id => $answer_data) {
-            $question_id = intval($question_id);
-            $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
-            if ($question_type === 'text') {
-                $answer_text = sanitize_textarea_field($answer_data);
-                $wpdb->insert($table_name, [
-                    'user_id' => $user_id,
-                    'quiz_id' => $quiz_id,
-                    'question_id' => $question_id,
-                    'answer_id' => 0,
-                    'answer_weight' => 0,
-                    'answer_text' => $answer_text,
-                ]);
-            } else {
-                $answers = get_post_meta($question_id, '_co_answers', true);
-                $answer_indices = $question_type === 'multiple_choice' ? (array)$answer_data : [$answer_data];
-                foreach ($answer_indices as $answer_index) {
-                    $answer_index = intval($answer_index);
-                    if (!isset($answers[$answer_index])) continue;
-                    $answer = $answers[$answer_index];
-                    $wpdb->insert($table_name, [
-                        'user_id' => $user_id,
-                        'quiz_id' => $quiz_id,
-                        'question_id' => $question_id,
-                        'answer_id' => $answer_index,
-                        'answer_weight' => $answer['weight'],
-                    ]);
-                    $total_score += $answer['weight'];
-                }
-            }
-        }
-        $recommendation = $total_score > 50 ? __('Consider creative or leadership roles.', 'career-orientation') : __('Consider analytical or technical roles.', 'career-orientation');
-        echo '<p>' . __('Your total score: ', 'career-orientation') . esc_html($total_score) . '</p>';
-        echo '<p>' . __('Recommendation: ', 'career-orientation') . esc_html($recommendation) . '</p>';
-    }
     return ob_get_clean();
 }
 add_shortcode('career_quiz', 'co_quiz_shortcode');
 
+function co_handle_quiz_submission() {
+    check_ajax_referer('co_quiz_nonce', 'nonce');
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_results';
+    $quiz_id = intval($_POST['quiz_id']);
+    $question_id = intval($_POST['question_id']);
+    $answer_data = isset($_POST['answer']) ? $_POST['answer'] : '';
+    $user_id = get_current_user_id();
+    
+    $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
+    if ($question_type === 'text') {
+        $answer_text = sanitize_textarea_field($answer_data);
+        $wpdb->insert($table_name, [
+            'user_id' => $user_id,
+            'quiz_id' => $quiz_id,
+            'question_id' => $question_id,
+            'answer_id' => 0,
+            'answer_weight' => 0,
+            'answer_text' => $answer_text,
+        ]);
+    } else {
+        $answers = get_post_meta($question_id, '_co_answers', true);
+        $answer_indices = $question_type === 'multiple_choice' ? (array)$answer_data : [$answer_data];
+        foreach ($answer_indices as $answer_index) {
+            $answer_index = intval($answer_index);
+            if (!isset($answers[$answer_index])) continue;
+            $answer = $answers[$answer_index];
+            $wpdb->insert($table_name, [
+                'user_id' => $user_id,
+                'quiz_id' => $quiz_id,
+                'question_id' => $question_id,
+                'answer_id' => $answer_index,
+                'answer_weight' => $answer['weight'],
+            ]);
+        }
+    }
+    wp_send_json_success();
+}
+add_action('wp_ajax_co_quiz_submit', 'co_handle_quiz_submission');
+add_action('wp_ajax_nopriv_co_quiz_submit', 'co_handle_quiz_submission');
+
 function co_enqueue_assets() {
-    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.3');
+    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.4');
     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', [], '4.4.2', true);
 }
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');
