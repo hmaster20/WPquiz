@@ -2,7 +2,7 @@
 /*
 Plugin Name: Career Orientation
 Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, and reports.
-Version: 3.4
+Version: 3.5
 Author: xAI
 License: GPL2
 Text Domain: career-orientation
@@ -120,6 +120,20 @@ function co_admin_menu() {
         'manage_options',
         'co-reports',
         'co_reports_page'
+    );
+    add_submenu_page(
+        'co-menu',
+        __('Categories', 'career-orientation'),
+        __('Categories', 'career-orientation'),
+        'manage_options',
+        'edit-tags.php?taxonomy=co_category&post_type=co_question'
+    );
+    add_submenu_page(
+        'co-menu',
+        __('Rubrics', 'career-orientation'),
+        __('Rubrics', 'career-orientation'),
+        'manage_options',
+        'edit-tags.php?taxonomy=co_rubric&post_type=co_quiz'
     );
 }
 add_action('admin_menu', 'co_admin_menu');
@@ -854,20 +868,29 @@ function co_reports_page() {
 function co_quiz_shortcode($atts) {
     $atts = shortcode_atts(['id' => 0], $atts);
     $quiz_id = intval($atts['id']);
-    if (!$quiz_id) return __('Invalid quiz ID', 'career-orientation');
+    if (!$quiz_id) {
+        return __('Invalid quiz ID', 'career-orientation');
+    }
     $quiz = get_post($quiz_id);
-    if (!$quiz || $quiz->post_type !== 'co_quiz') return __('Invalid quiz', 'career-orientation');
+    if (!$quiz || $quiz->post_type !== 'co_quiz') {
+        return __('Invalid quiz', 'career-orientation');
+    }
     $question_ids = get_post_meta($quiz_id, '_co_questions', true) ?: [];
+    if (empty($question_ids)) {
+        return __('No questions available for this quiz.', 'career-orientation');
+    }
     $questions = get_posts([
         'post_type' => 'co_question',
         'post__in' => $question_ids,
         'posts_per_page' => -1,
         'orderby' => 'post__in',
     ]);
-    if (empty($questions)) return __('No questions available for this quiz.', 'career-orientation');
+    if (empty($questions)) {
+        return __('No questions found for this quiz.', 'career-orientation');
+    }
     $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
     $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.4', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.5', true);
     wp_localize_script('co-quiz-script', 'coQuiz', [
         'ajax_url' => admin_url('admin-ajax.php'),
         'quiz_id' => $quiz_id,
@@ -882,6 +905,7 @@ function co_quiz_shortcode($atts) {
             ];
         }, $questions),
         'allow_back' => $allow_back,
+        'show_results' => $show_results,
         'nonce' => wp_create_nonce('co_quiz_nonce'),
     ]);
     ob_start();
@@ -893,6 +917,9 @@ function co_quiz_shortcode($atts) {
         </div>
         <div id="co-quiz-results" style="display:none;"></div>
     </div>
+    <script>
+        console.log('coQuiz:', <?php echo json_encode(wp_localize_script('co-quiz-script', 'coQuiz', [])); ?>);
+    </script>
     <?php
     return ob_get_clean();
 }
@@ -940,7 +967,7 @@ add_action('wp_ajax_co_quiz_submit', 'co_handle_quiz_submission');
 add_action('wp_ajax_nopriv_co_quiz_submit', 'co_handle_quiz_submission');
 
 function co_enqueue_assets() {
-    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.4');
+    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.5');
     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', [], '4.4.2', true);
 }
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');

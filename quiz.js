@@ -1,10 +1,20 @@
 jQuery(document).ready(function($) {
-    var quiz = window.coQuiz;
+    if (typeof coQuiz === 'undefined') {
+        console.error('coQuiz is not defined');
+        $('#co-quiz-' + <?php echo json_encode($quiz_id); ?>).html('<p><?php _e('Error loading quiz. Please try again.', 'career-orientation'); ?></p>');
+        return;
+    }
+
+    var quiz = coQuiz;
     var currentQuestionIndex = 0;
     var answers = {};
 
     function showQuestion(index) {
         var question = quiz.questions[index];
+        if (!question) {
+            console.error('Question not found at index: ' + index);
+            return;
+        }
         var html = '<div class="co-question active" data-question-id="' + question.id + '">';
         html += '<h3>' + question.title + '</h3>';
         html += '<div class="co-answer-options">';
@@ -61,8 +71,30 @@ jQuery(document).ready(function($) {
         }
         saveAnswer();
         if (currentQuestionIndex < quiz.questions.length - 1) {
-            currentQuestionIndex++;
-            showQuestion(currentQuestionIndex);
+            $.ajax({
+                url: quiz.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'co_quiz_submit',
+                    nonce: quiz.nonce,
+                    quiz_id: quiz.quiz_id,
+                    question_id: question.id,
+                    answer: answers[question.id]
+                },
+                success: function(response) {
+                    if (response.success) {
+                        currentQuestionIndex++;
+                        showQuestion(currentQuestionIndex);
+                    } else {
+                        console.error('AJAX error:', response);
+                        alert('<?php _e('Error submitting answer. Please try again.', 'career-orientation'); ?>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    alert('<?php _e('Error submitting answer. Please try again.', 'career-orientation'); ?>');
+                }
+            });
         } else {
             $.ajax({
                 url: quiz.ajax_url,
@@ -71,14 +103,37 @@ jQuery(document).ready(function($) {
                     action: 'co_quiz_submit',
                     nonce: quiz.nonce,
                     quiz_id: quiz.quiz_id,
-                    answers: answers
+                    question_id: question.id,
+                    answer: answers[question.id]
                 },
                 success: function(response) {
-                    $('#co-quiz-questions').hide();
-                    $('#co-quiz-thank-you').show();
-                    if (response.data && response.data.results) {
-                        $('#co-quiz-results').html(response.data.results).show();
+                    if (response.success) {
+                        var totalScore = 0;
+                        $.each(quiz.questions, function(index, q) {
+                            if (q.type !== 'text' && answers[q.id]) {
+                                var indices = Array.isArray(answers[q.id]) ? answers[q.id] : [answers[q.id]];
+                                $.each(indices, function(i, index) {
+                                    if (q.answers[index]) {
+                                        totalScore += parseInt(q.answers[index].weight);
+                                    }
+                                });
+                            }
+                        });
+                        $('#co-quiz-questions').hide();
+                        $('#co-quiz-thank-you').show();
+                        if (quiz.show_results) {
+                            var resultsHtml = '<p><?php _e('Your total score: ', 'career-orientation'); ?>' + totalScore + '</p>';
+                            resultsHtml += '<p><?php _e('Recommendation: ', 'career-orientation'); ?>' + (totalScore > 50 ? '<?php _e('Consider creative or leadership roles.', 'career-orientation'); ?>' : '<?php _e('Consider analytical or technical roles.', 'career-orientation'); ?>') + '</p>';
+                            $('#co-quiz-results').html(resultsHtml).show();
+                        }
+                    } else {
+                        console.error('Final submission error:', response);
+                        alert('<?php _e('Error completing quiz. Please try again.', 'career-orientation'); ?>');
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Final submission AJAX error:', error);
+                    alert('<?php _e('Error completing quiz. Please try again.', 'career-orientation'); ?>');
                 }
             });
         }
@@ -92,41 +147,9 @@ jQuery(document).ready(function($) {
         }
     });
 
-    function submitAllAnswers() {
-        $.each(answers, function(question_id, answer_data) {
-            $.ajax({
-                url: quiz.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'co_quiz_submit',
-                    nonce: quiz.nonce,
-                    quiz_id: quiz.quiz_id,
-                    question_id: question_id,
-                    answer: answer_data
-                },
-                async: false
-            });
-        });
-        var totalScore = 0;
-        $.each(quiz.questions, function(index, question) {
-            if (question.type !== 'text' && answers[question.id]) {
-                var indices = Array.isArray(answers[question.id]) ? answers[question.id] : [answers[question.id]];
-                $.each(indices, function(i, index) {
-                    if (question.answers[index]) {
-                        totalScore += parseInt(question.answers[index].weight);
-                    }
-                });
-            }
-        });
-        var resultsHtml = '<p><?php _e('Thank you for completing the quiz!', 'career-orientation'); ?></p>';
-        <?php if ($show_results) : ?>
-            resultsHtml += '<p><?php _e('Your total score: ', 'career-orientation'); ?>' + totalScore + '</p>';
-            resultsHtml += '<p><?php _e('Recommendation: ', 'career-orientation'); ?>' + (totalScore > 50 ? '<?php _e('Consider creative or leadership roles.', 'career-orientation'); ?>' : '<?php _e('Consider analytical or technical roles.', 'career-orientation'); ?>') + '</p>';
-        <?php endif; ?>
-        return { success: true, data: { results: resultsHtml } };
-    }
-
     if (quiz.questions.length > 0) {
         showQuestion(currentQuestionIndex);
+    } else {
+        $('#co-quiz-' + quiz.quiz_id).html('<p><?php _e('No questions available for this quiz.', 'career-orientation'); ?></p>');
     }
 });
