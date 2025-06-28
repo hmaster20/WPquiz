@@ -12,13 +12,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+function co_load_textdomain() {
+    load_plugin_textdomain('career-orientation', false, dirname(plugin_basename(__FILE__)) . '/languages/');
+}
+add_action('plugins_loaded', 'co_load_textdomain');
+
 function co_install() {
     global $wpdb;
+    $table_name = $wpdb->prefix . 'co_results';
     $charset_collate = $wpdb->get_charset_collate();
 
-    // Создание таблицы wp_co_results
-    $table_results = $wpdb->prefix . 'co_results';
-    $sql_results = "CREATE TABLE IF NOT EXISTS $table_results (
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id BIGINT(20) UNSIGNED DEFAULT 0,
         quiz_id BIGINT(20) UNSIGNED NOT NULL,
@@ -30,22 +34,8 @@ function co_install() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
-    // Создание таблицы wp_co_answers
-    $table_answers = $wpdb->prefix . 'co_answers';
-    $sql_answers = "CREATE TABLE IF NOT EXISTS $table_answers (
-        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        quiz_id BIGINT(20) UNSIGNED NOT NULL,
-        question_id BIGINT(20) UNSIGNED NOT NULL,
-        answer_id BIGINT(20) UNSIGNED NOT NULL,
-        answer_text TEXT,
-        answer_weight INT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id)
-    ) $charset_collate;";
-
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql_results);
-    dbDelta($sql_answers);
+    dbDelta($sql);
 
     flush_rewrite_rules();
 }
@@ -219,27 +209,27 @@ function co_overview_page() {
     <div class="wrap">
         <h1><?php _e('Career Orientation', 'career-orientation'); ?></h1>
         <h2><?php _e('Описание плагина', 'career-orientation'); ?></h2>
-        <p>Плагин "Career Orientation" предназначен для создания и управления тестами профориентации. Он позволяет создавать вопросы с различными типами ответов, организовывать их в опросы, присваивать категории и рубрики, а также анализировать результаты.</p>
-        <h3>Как работать с плагином</h3>
+        <p><?php _e('Плагин "Career Orientation" предназначен для создания и управления тестами профориентации. Он позволяет создавать вопросы с различными типами ответов, организовывать их в опросы, присваивать категории и рубрики, а также анализировать результаты.', 'career-orientation'); ?></p>
+        <h3><?php _e('Как работать с плагином', 'career-orientation'); ?></h3>
         <ul>
-            <li><strong>Вопросы</strong>: Создавайте вопросы в разделе "Questions". Выберите тип вопроса:
+            <li><strong><?php _e('Questions', 'career-orientation'); ?></strong>: <?php _e('Создавайте вопросы в разделе "Questions". Выберите тип вопроса:', 'career-orientation'); ?>
                 <ul>
-                    <li><strong>Multiple Choice</strong>: множественный выбор (чекбоксы), до 50 ответов с весами.</li>
-                    <li><strong>Select</strong>: одиночный выбор (радиокнопки), до 50 ответов с весами.</li>
-                    <li><strong>Text</strong>: текстовый ввод (без весов).</li>
+                    <li><strong><?php _e('Multiple Choice', 'career-orientation'); ?></strong>: <?php _e('множественный выбор (чекбоксы), до 50 ответов с весами.', 'career-orientation'); ?></li>
+                    <li><strong><?php _e('Select', 'career-orientation'); ?></strong>: <?php _e('одиночный выбор (радиокнопки), до 50 ответов с весами.', 'career-orientation'); ?></li>
+                    <li><strong><?php _e('Text', 'career-orientation'); ?></strong>: <?php _e('текстовый ввод (без весов).', 'career-orientation'); ?></li>
                 </ul>
-                Укажите, является ли вопрос обязательным. Назначьте категории для аналитики.
+                <?php _e('Укажите, является ли вопрос обязательным. Назначьте категории для аналитики.', 'career-orientation'); ?>
             </li>
-            <li><strong>Опросы</strong>: В разделе "Quizzes" создавайте опросы, добавляя существующие или новые вопросы. Настройте отображение результатов и переход назад. После сохранения опроса вы увидите шорткод для его публикации.</li>
-            <li><strong>Категории</strong>: Создавайте категории вопросов в разделе "Categories" для группировки и анализа.</li>
-            <li><strong>Рубрики</strong>: Назначайте рубрики опросам в разделе "Rubrics" для классификации.</li>
-            <li><strong>Аналитика</strong>: Просматривайте статистику ответов в разделе "Analytics" с фильтрами по рубрикам, категориям и датам.</li>
-            <li><strong>Отчеты</strong>: Анализируйте результаты пользователей в разделе "Reports" с фильтрами по пользователям, опросам и датам.</li>
+            <li><strong><?php _e('Quizzes', 'career-orientation'); ?></strong>: <?php _e('В разделе "Quizzes" создавайте опросы, добавляя существующие или новые вопросы. Настройте отображение результатов и переход назад. После сохранения опроса вы увидите шорткод для его публикации.', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Categories', 'career-orientation'); ?></strong>: <?php _e('Создавайте категории вопросов в разделе "Categories" для группировки и анализа.', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Rubrics', 'career-orientation'); ?></strong>: <?php _e('Назначайте рубрики опросам в разделе "Rubrics" для классификации.', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Analytics', 'career-orientation'); ?></strong>: <?php _e('Просматривайте статистику ответов в разделе "Analytics" с фильтрами по рубрикам, категориям и датам.', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Reports', 'career-orientation'); ?></strong>: <?php _e('Анализируйте результаты пользователей в разделе "Reports" с фильтрами по пользователям, опросам и датам.', 'career-orientation'); ?></li>
         </ul>
-        <h3>Как использовать шорткод</h3>
-        <p>Для публикации опроса используйте шорткод <code>[career_quiz id="X"]</code>, где <code>X</code> — ID опроса. Шорткод отображается в форме редактирования опроса. Вставьте его в любую страницу или пост.</p>
-        <h3>Пример</h3>
-        <p>Создайте опрос с ID 5, затем добавьте на страницу: <code>[career_quiz id="5"]</code>. Пользователи смогут пройти тест, а результаты сохранятся для анализа.</p>
+        <h3><?php _e('Как использовать шорткод', 'career-orientation'); ?></h3>
+        <p><?php _e('Для публикации опроса используйте шорткод <code>[career_quiz id="X"]</code>, где <code>X</code> — ID опроса. Шорткод отображается в форме редактирования опроса. Вставьте его в любую страницу или пост.', 'career-orientation'); ?></p>
+        <h3><?php _e('Пример', 'career-orientation'); ?></h3>
+        <p><?php _e('Создайте опрос с ID 5, затем добавьте на страницу: <code>[career_quiz id="5"]</code>. Пользователи смогут пройти тест, а результаты сохранятся для анализа.', 'career-orientation'); ?></p>
         <h2><?php _e('Разделы', 'career-orientation'); ?></h2>
         <ul>
             <li><a href="<?php echo admin_url('edit.php?post_type=co_question'); ?>"><?php _e('Questions', 'career-orientation'); ?></a></li>
@@ -802,54 +792,6 @@ function co_analytics_page() {
     <?php
 }
 
-function co_answers_page() {
-    if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
-    }
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'co_answers';
-    $answers = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC");
-    ?>
-    <div class="wrap">
-        <h1><?php _e('Answers', 'career-orientation'); ?></h1>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th><?php _e('Quiz ID', 'career-orientation'); ?></th>
-                    <th><?php _e('Question ID', 'career-orientation'); ?></th>
-                    <th><?php _e('Answer ID', 'career-orientation'); ?></th>
-                    <th><?php _e('Answer Text', 'career-orientation'); ?></th>
-                    <th><?php _e('Weight', 'career-orientation'); ?></th>
-                    <th><?php _e('Created At', 'career-orientation'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($answers as $answer) : ?>
-                <tr>
-                    <td><?php echo esc_html($answer->quiz_id); ?></td>
-                    <td><?php echo esc_html($answer->question_id); ?></td>
-                    <td><?php echo esc_html($answer->answer_id); ?></td>
-                    <td><?php echo esc_html($answer->answer_text); ?></td>
-                    <td><?php echo esc_html($answer->answer_weight); ?></td>
-                    <td><?php echo esc_html($answer->created_at); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php
-}
-add_action('admin_menu', function() {
-    add_submenu_page(
-        'co-menu',
-        __('Answers', 'career-orientation'),
-        __('Answers', 'career-orientation'),
-        'manage_options',
-        'co-answers',
-        'co_answers_page'
-    );
-});
-
 function co_reports_page() {
     if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
@@ -975,7 +917,7 @@ function co_quiz_shortcode($atts) {
     }
     $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
     $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.6', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.php', ['jquery'], '3.6', true);
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'quiz_id' => $quiz_id,
@@ -1009,9 +951,6 @@ function co_quiz_shortcode($atts) {
             'creative_roles' => __('Consider creative or leadership roles.', 'career-orientation'),
             'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation'),
             'no_questions' => __('No questions available for this quiz.', 'career-orientation'),
-            'loading' => __('Loading...', 'career-orientation'),
-            'thank_you' => __('Thank you for completing the quiz!', 'career-orientation'),
-            'of' => __('of', 'career-orientation'),
         ],
     ];
     wp_localize_script('co-quiz-script', 'coQuiz', $quiz_data);
@@ -1039,13 +978,12 @@ function co_handle_quiz_submission() {
 
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_nonce')) {
         error_log('co_handle_quiz_submission: Invalid nonce');
-        wp_send_json_error(['message' => 'Invalid nonce']);
+        wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
         return;
     }
 
     global $wpdb;
-    $table_results = $wpdb->prefix . 'co_results';
-    $table_answers = $wpdb->prefix . 'co_answers';
+    $table_name = $wpdb->prefix . 'co_results';
     $quiz_id = intval($_POST['quiz_id']);
     $question_id = intval($_POST['question_id']);
     $answer_data = isset($_POST['answer']) ? $_POST['answer'] : '';
@@ -1060,7 +998,7 @@ function co_handle_quiz_submission() {
     if ($question_type === 'text') {
         $answer_text = sanitize_textarea_field($answer_data);
         error_log('co_handle_quiz_submission: Inserting text answer: ' . $answer_text);
-        $result = $wpdb->insert($table_results, [
+        $result = $wpdb->insert($table_name, [
             'user_id' => $user_id,
             'quiz_id' => $quiz_id,
             'question_id' => $question_id,
@@ -1068,16 +1006,9 @@ function co_handle_quiz_submission() {
             'answer_weight' => 0,
             'answer_text' => $answer_text,
         ]);
-        $wpdb->insert($table_answers, [
-            'quiz_id' => $quiz_id,
-            'question_id' => $question_id,
-            'answer_id' => 0,
-            'answer_text' => $answer_text,
-            'answer_weight' => 0,
-        ]);
         if ($result === false) {
             error_log('co_handle_quiz_submission: Database error: ' . $wpdb->last_error);
-            wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
+            wp_send_json_error(['message' => __('Database error: ', 'career-orientation') . $wpdb->last_error]);
             return;
         }
     } else {
@@ -1092,23 +1023,16 @@ function co_handle_quiz_submission() {
             }
             $answer = $answers[$answer_index];
             error_log('co_handle_quiz_submission: Inserting answer index=' . $answer_index . ', weight=' . $answer['weight']);
-            $result = $wpdb->insert($table_results, [
+            $result = $wpdb->insert($table_name, [
                 'user_id' => $user_id,
                 'quiz_id' => $quiz_id,
                 'question_id' => $question_id,
                 'answer_id' => $answer_index,
                 'answer_weight' => $answer['weight'],
             ]);
-            $wpdb->insert($table_answers, [
-                'quiz_id' => $quiz_id,
-                'question_id' => $question_id,
-                'answer_id' => $answer_index,
-                'answer_text' => $answer['text'],
-                'answer_weight' => $answer['weight'],
-            ]);
             if ($result === false) {
                 error_log('co_handle_quiz_submission: Database error: ' . $wpdb->last_error);
-                wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
+                wp_send_json_error(['message' => __('Database error: ', 'career-orientation') . $wpdb->last_error]);
                 return;
             }
         }

@@ -1,17 +1,18 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Career Orientation 1.0\n"
-"POT-Creation-Date: 2025-06-28 12:00+0000\n"
-"PO-Revision-Date: 2025-06-28 12:00+0000\n"
-"Language-Team: Your Team\n"
+"Project-Id-Version: Career Orientation 3.6\n"
+"POT-Creation-Date: 2025-06-28 14:05-0400\n"
+"PO-Revision-Date: 2025-06-29 00:06+0300\n"
+"Last-Translator: Grok <grok@x.ai>\n"
+"Language-Team: xAI\n"
+"Language: ru_RU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: ru_RU\n"
-"X-Generator: Poedit 3.0\n"
+"X-Generator: Poedit 3.6\n"
 
 msgid "Career Orientation"
-msgstr "Карьерная ориентация"
+msgstr "Профориентация"
 
 msgid "Questions"
 msgstr "Вопросы"
@@ -19,122 +20,92 @@ msgstr "Вопросы"
 msgid "Question"
 msgstr "Вопрос"
 
-msgid "Add New"
-msgstr "Добавить новый"
-
 msgid "Add New Question"
 msgstr "Добавить новый вопрос"
 
 msgid "Edit Question"
 msgstr "Редактировать вопрос"
 
-msgid "New Question"
-msgstr "Новый вопрос"
-
-msgid "View Question"
-msgstr "Просмотреть вопрос"
-
-msgid "Search Questions"
-msgstr "Искать вопросы"
-
-msgid "Questions not found"
-msgstr "Вопросы не найдены"
-
-msgid "Questions not found in Trash"
-msgstr "Вопросы не найдены в корзине"
-
 msgid "Quizzes"
-msgstr "Тесты"
+msgstr "Опросы"
 
 msgid "Quiz"
-msgstr "Тест"
+msgstr "Опрос"
 
 msgid "Add New Quiz"
-msgstr "Добавить новый тест"
+msgstr "Добавить новый опрос"
 
 msgid "Edit Quiz"
-msgstr "Редактировать тест"
+msgstr "Редактировать опрос"
 
-msgid "New Quiz"
-msgstr "Новый тест"
+msgid "Categories"
+msgstr "Категории"
 
-msgid "View Quiz"
-msgstr "Просмотреть тест"
+msgid "Category"
+msgstr "Категория"
 
-msgid "Search Quizzes"
-msgstr "Искать тесты"
+msgid "Rubrics"
+msgstr "Рубрики"
 
-msgid "Quizzes not found"
-msgstr "Тесты не найдены"
+msgid "Rubric"
+msgstr "Рубрика"
 
-msgid "Quizzes not found in Trash"
-msgstr "Тесты не найдены в корзине"
+msgid "Analytics"
+msgstr "Аналитика"
 
-msgid "Answers"
-msgstr "Ответы"
+msgid "Reports"
+msgstr "Отчеты"
 
-msgid "Settings"
-msgstr "Настройки"
+msgid "You do not have sufficient permissions to access this page."
+msgstr "У вас недостаточно прав для доступа к этой странице."
 
-msgid "Welcome to career orientation quiz management. Use the menu to manage questions, quizzes, answers, and settings."
-msgstr "Добро пожаловать в управление тестами по карьерной ориентации. Используйте меню для управления вопросами, тестами, ответами и настройками."
+msgid "Описание плагина"
+msgstr "Описание плагина"
 
-msgid "Users' Answers"
-msgstr "Ответы пользователей"
+msgid "Плагин \"Career Orientation\" предназначен для создания и управления тестами профориентации. Он позволяет создавать вопросы с различными типами ответов, организовывать их в опросы, присваивать категории и рубрики, а также анализировать результаты."
+msgstr "Плагин \"Профориентация\" предназначен для создания и управления тестами профориентации. Он позволяет создавать вопросы с различными типами ответов, организовывать их в опросы, присваивать категории и рубрики, а также анализировать результаты."
 
-msgid "ID"
-msgstr "ID"
+msgid "Как работать с плагином"
+msgstr "Как работать с плагином"
 
-msgid "User"
-msgstr "Пользователь"
-
-msgid "Answer"
-msgstr "Ответ"
-
-msgid "Weight"
-msgstr "Вес"
-
-msgid "Date"
-msgstr "Дата"
-
-msgid "Not found"
-msgstr "Не найден"
-
-msgid "Guest"
-msgstr "Гость"
-
-msgid "Quiz Settings"
-msgstr "Настройки тестов"
-
-msgid "Show results by default"
-msgstr "Показывать результаты по умолчанию"
-
-msgid "Allow back to previous question"
-msgstr "Разрешить возврат к предыдущему вопросу"
-
-msgid "Question Settings"
-msgstr "Настройки вопроса"
-
-msgid "Question Type"
-msgstr "Тип вопроса"
-
-msgid "Single choice"
-msgstr "Выбор одного ответа"
-
-msgid "Multiple choice"
+msgid "Multiple Choice"
 msgstr "Множественный выбор"
 
-msgid "Text answer"
-msgstr "Текстовый ответ"
+msgid "Select"
+msgstr "Одиночный выбор"
+
+msgid "Text"
+msgstr "Текстовый"
 
 msgid "Required question"
 msgstr "Обязательный вопрос"
 
-msgid "Answer Options"
-msgstr "Варианты ответа"
+msgid "Show quiz results"
+msgstr "Показывать результаты опроса"
 
-msgid "Answer Text"
+msgid "Allow going back to previous questions"
+msgstr "Разрешить возврат к предыдущим вопросам"
+
+msgid "Use this shortcode to publish the quiz:"
+msgstr "Используйте этот шорткод для публикации опроса:"
+
+msgid "Answers and Options"
+msgstr "Ответы и настройки"
+
+msgid "Question Type:"
+msgstr "Тип вопроса:"
+
+msgid "Select (Single Choice)"
+msgstr "Одиночный выбор"
+
+msgid "Add up to 50 answers with their weights (integer values)."
+msgstr "Добавьте до 50 ответов с их весами (целые числа)."
+
+msgid "Answer text"
 msgstr "Текст ответа"
+
+msgid "Weight"
+msgstr "Вес"
 
 msgid "Remove"
 msgstr "Удалить"
@@ -142,50 +113,116 @@ msgstr "Удалить"
 msgid "Add Answer"
 msgstr "Добавить ответ"
 
-msgid "Quiz Questions"
-msgstr "Вопросы теста"
+msgid "Text questions allow users to enter a custom response (no weights)."
+msgstr "Текстовые вопросы позволяют пользователям вводить произвольный ответ (без весов)."
 
-msgid "Invalid quiz ID."
-msgstr "Некорректный ID теста."
+msgid "Maximum 50 answers allowed."
+msgstr "Максимум 50 ответов."
 
-msgid "Quiz not found."
-msgstr "Тест не найден."
+msgid "Select Existing Questions"
+msgstr "Выбрать существующие вопросы"
+
+msgid "Add New Questions"
+msgstr "Добавить новые вопросы"
+
+msgid "Question title"
+msgstr "Название вопроса"
+
+msgid "Required"
+msgstr "Обязательный"
+
+msgid "Remove Question"
+msgstr "Удалить вопрос"
+
+msgid "All Rubrics"
+msgstr "Все рубрики"
+
+msgid "All Categories"
+msgstr "Все категории"
+
+msgid "Start Date:"
+msgstr "Дата начала:"
+
+msgid "End Date:"
+msgstr "Дата окончания:"
+
+msgid "Apply Filters"
+msgstr "Применить фильтры"
+
+msgid "No quizzes available."
+msgstr "Опросы отсутствуют."
+
+msgid "Answer"
+msgstr "Ответ"
+
+msgid "Responses"
+msgstr "Ответы"
+
+msgid "All Users"
+msgstr "Все пользователи"
+
+msgid "All Quizzes"
+msgstr "Все опросы"
+
+msgid "User"
+msgstr "Пользователь"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "Total Score"
+msgstr "Общий балл"
+
+msgid "Guest"
+msgstr "Гость"
+
+msgid "Invalid quiz ID"
+msgstr "Недопустимый ID опроса"
+
+msgid "Invalid quiz"
+msgstr "Недопустимый опрос"
 
 msgid "No questions available for this quiz."
-msgstr "Вопросы для этого теста отсутствуют."
+msgstr "Для этого опроса нет доступных вопросов."
+
+msgid "No questions found for this quiz."
+msgstr "Вопросы для этого опроса не найдены."
+
+msgid "Thank you for completing the quiz!"
+msgstr "Спасибо за прохождение опроса!"
 
 msgid "Error loading quiz. Please try again."
-msgstr "Ошибка загрузки теста. Пожалуйста, попробуйте снова."
+msgstr "Ошибка загрузки опроса. Пожалуйста, попробуйте снова."
 
 msgid "Error: Question not found."
 msgstr "Ошибка: Вопрос не найден."
 
 msgid "Error: Invalid question data."
-msgstr "Ошибка: Некорректные данные вопроса."
+msgstr "Ошибка: Неверные данные вопроса."
 
 msgid "Error: No answers available."
-msgstr "Ошибка: Варианты ответа отсутствуют."
+msgstr "Ошибка: Нет доступных ответов."
 
 msgid "Enter your answer"
 msgstr "Введите ваш ответ"
 
 msgid "Previous"
-msgstr "Назад"
+msgstr "Предыдущий"
 
 msgid "Next"
-msgstr "Далее"
+msgstr "Следующий"
 
 msgid "Submit Quiz"
-msgstr "Завершить тест"
+msgstr "Отправить опрос"
 
 msgid "Please answer this question."
-msgstr "Пожалуйста, ответьте на вопрос."
+msgstr "Пожалуйста, ответьте на этот вопрос."
 
 msgid "Error submitting answer. Please try again."
 msgstr "Ошибка при отправке ответа. Пожалуйста, попробуйте снова."
 
 msgid "Error completing quiz. Please try again."
-msgstr "Ошибка при завершении теста. Пожалуйста, попробуйте снова."
+msgstr "Ошибка при завершении опроса. Пожалуйста, попробуйте снова."
 
 msgid "Your total score: "
 msgstr "Ваш общий балл: "
@@ -198,30 +235,3 @@ msgstr "Рассмотрите творческие или руководящи�
 
 msgid "Consider analytical or technical roles."
 msgstr "Рассмотрите аналитические или технические роли."
-
-msgid "Loading..."
-msgstr "Загрузка..."
-
-msgid "Thank you for completing the quiz!"
-msgstr "Спасибо за прохождение теста!"
-
-msgid "Invalid nonce."
-msgstr "Недействительный nonce."
-
-msgid "Invalid quiz_id or question_id."
-msgstr "Некорректный quiz_id или question_id."
-
-msgid "Question not found."
-msgstr "Вопрос не найден."
-
-msgid "Invalid answer index."
-msgstr "Некорректный индекс ответа."
-
-msgid "Answer successfully saved."
-msgstr "Ответ успешно сохранен."
-
-msgid "Database error."
-msgstr "Ошибка базы данных."
-
-msgid "of"
-msgstr "из"
