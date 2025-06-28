@@ -1,0 +1,227 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Career Orientation 1.0\n"
+"POT-Creation-Date: 2025-06-28 12:00+0000\n"
+"PO-Revision-Date: 2025-06-28 12:00+0000\n"
+"Language-Team: Your Team\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ru_RU\n"
+"X-Generator: Poedit 3.0\n"
+
+msgid "Career Orientation"
+msgstr "Карьерная ориентация"
+
+msgid "Questions"
+msgstr "Вопросы"
+
+msgid "Question"
+msgstr "Вопрос"
+
+msgid "Add New"
+msgstr "Добавить новый"
+
+msgid "Add New Question"
+msgstr "Добавить новый вопрос"
+
+msgid "Edit Question"
+msgstr "Редактировать вопрос"
+
+msgid "New Question"
+msgstr "Новый вопрос"
+
+msgid "View Question"
+msgstr "Просмотреть вопрос"
+
+msgid "Search Questions"
+msgstr "Искать вопросы"
+
+msgid "Questions not found"
+msgstr "Вопросы не найдены"
+
+msgid "Questions not found in Trash"
+msgstr "Вопросы не найдены в корзине"
+
+msgid "Quizzes"
+msgstr "Тесты"
+
+msgid "Quiz"
+msgstr "Тест"
+
+msgid "Add New Quiz"
+msgstr "Добавить новый тест"
+
+msgid "Edit Quiz"
+msgstr "Редактировать тест"
+
+msgid "New Quiz"
+msgstr "Новый тест"
+
+msgid "View Quiz"
+msgstr "Просмотреть тест"
+
+msgid "Search Quizzes"
+msgstr "Искать тесты"
+
+msgid "Quizzes not found"
+msgstr "Тесты не найдены"
+
+msgid "Quizzes not found in Trash"
+msgstr "Тесты не найдены в корзине"
+
+msgid "Answers"
+msgstr "Ответы"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Welcome to career orientation quiz management. Use the menu to manage questions, quizzes, answers, and settings."
+msgstr "Добро пожаловать в управление тестами по карьерной ориентации. Используйте меню для управления вопросами, тестами, ответами и настройками."
+
+msgid "Users' Answers"
+msgstr "Ответы пользователей"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "User"
+msgstr "Пользователь"
+
+msgid "Answer"
+msgstr "Ответ"
+
+msgid "Weight"
+msgstr "Вес"
+
+msgid "Date"
+msgstr "Дата"
+
+msgid "Not found"
+msgstr "Не найден"
+
+msgid "Guest"
+msgstr "Гость"
+
+msgid "Quiz Settings"
+msgstr "Настройки тестов"
+
+msgid "Show results by default"
+msgstr "Показывать результаты по умолчанию"
+
+msgid "Allow back to previous question"
+msgstr "Разрешить возврат к предыдущему вопросу"
+
+msgid "Question Settings"
+msgstr "Настройки вопроса"
+
+msgid "Question Type"
+msgstr "Тип вопроса"
+
+msgid "Single choice"
+msgstr "Выбор одного ответа"
+
+msgid "Multiple choice"
+msgstr "Множественный выбор"
+
+msgid "Text answer"
+msgstr "Текстовый ответ"
+
+msgid "Required question"
+msgstr "Обязательный вопрос"
+
+msgid "Answer Options"
+msgstr "Варианты ответа"
+
+msgid "Answer Text"
+msgstr "Текст ответа"
+
+msgid "Remove"
+msgstr "Удалить"
+
+msgid "Add Answer"
+msgstr "Добавить ответ"
+
+msgid "Quiz Questions"
+msgstr "Вопросы теста"
+
+msgid "Invalid quiz ID."
+msgstr "Некорректный ID теста."
+
+msgid "Quiz not found."
+msgstr "Тест не найден."
+
+msgid "No questions available for this quiz."
+msgstr "Вопросы для этого теста отсутствуют."
+
+msgid "Error loading quiz. Please try again."
+msgstr "Ошибка загрузки теста. Пожалуйста, попробуйте снова."
+
+msgid "Error: Question not found."
+msgstr "Ошибка: Вопрос не найден."
+
+msgid "Error: Invalid question data."
+msgstr "Ошибка: Некорректные данные вопроса."
+
+msgid "Error: No answers available."
+msgstr "Ошибка: Варианты ответа отсутствуют."
+
+msgid "Enter your answer"
+msgstr "Введите ваш ответ"
+
+msgid "Previous"
+msgstr "Назад"
+
+msgid "Next"
+msgstr "Далее"
+
+msgid "Submit Quiz"
+msgstr "Завершить тест"
+
+msgid "Please answer this question."
+msgstr "Пожалуйста, ответьте на вопрос."
+
+msgid "Error submitting answer. Please try again."
+msgstr "Ошибка при отправке ответа. Пожалуйста, попробуйте снова."
+
+msgid "Error completing quiz. Please try again."
+msgstr "Ошибка при завершении теста. Пожалуйста, попробуйте снова."
+
+msgid "Your total score: "
+msgstr "Ваш общий балл: "
+
+msgid "Recommendation: "
+msgstr "Рекомендация: "
+
+msgid "Consider creative or leadership roles."
+msgstr "Рассмотрите творческие или руководящие роли."
+
+msgid "Consider analytical or technical roles."
+msgstr "Рассмотрите аналитические или технические роли."
+
+msgid "Loading..."
+msgstr "Загрузка..."
+
+msgid "Thank you for completing the quiz!"
+msgstr "Спасибо за прохождение теста!"
+
+msgid "Invalid nonce."
+msgstr "Недействительный nonce."
+
+msgid "Invalid quiz_id or question_id."
+msgstr "Некорректный quiz_id или question_id."
+
+msgid "Question not found."
+msgstr "Вопрос не найден."
+
+msgid "Invalid answer index."
+msgstr "Некорректный индекс ответа."
+
+msgid "Answer successfully saved."
+msgstr "Ответ успешно сохранен."
+
+msgid "Database error."
+msgstr "Ошибка базы данных."
+
+msgid "of"
+msgstr "из"

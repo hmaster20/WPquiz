@@ -1,13 +1,10 @@
-<?php
-header('Content-Type: application/javascript');
-?>
 jQuery(document).ready(function($) {
     console.log('quiz.js loaded successfully');
 
     // Проверка наличия объекта coQuiz
     if (typeof coQuiz === 'undefined') {
         console.error('coQuiz is not defined');
-        $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_loading_quiz || 'Error loading quiz. Please try again.') + '</p>');
+        $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_loading_quiz || 'Ошибка загрузки теста. Пожалуйста, попробуйте снова.') + '</p>');
         return;
     }
     console.log('coQuiz data:', JSON.stringify(coQuiz, null, 2));
@@ -23,14 +20,14 @@ jQuery(document).ready(function($) {
         // Проверка наличия вопроса
         if (!question) {
             console.error('Question not found at index:', index);
-            $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_question_not_found || 'Error: Question not found.') + '</p>');
+            $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_question_not_found || 'Ошибка: Вопрос не найден.') + '</p>');
             return;
         }
         
         // Проверка валидности данных вопроса
         if (!question.title || !question.id) {
             console.error('Invalid question data:', JSON.stringify(question, null, 2));
-            $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_invalid_question || 'Error: Invalid question data.') + '</p>');
+            $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_invalid_question || 'Ошибка: Некорректные данные вопроса.') + '</p>');
             return;
         }
 
@@ -42,12 +39,12 @@ jQuery(document).ready(function($) {
         // Обработка текстовых вопросов
         if (question.type === 'text') {
             console.log('Question type: text');
-            html += '<textarea name="co_answer_' + question.id + '" ' + (question.required ? 'required' : '') + ' placeholder="' + (coQuiz.translations?.enter_answer || 'Enter your answer') + '"></textarea>';
+            html += '<textarea name="co_answer_' + question.id + '" ' + (question.required ? 'required' : '') + ' placeholder="' + (coQuiz.translations?.enter_answer || 'Введите ваш ответ') + '"></textarea>';
         } else {
             // Проверка наличия ответов
             if (!question.answers || !Array.isArray(question.answers)) {
                 console.error('Invalid answers for question ID:', question.id);
-                html += '<p>' + (coQuiz.translations?.error_no_answers || 'Error: No answers available.') + '</p>';
+                html += '<p>' + (coQuiz.translations?.error_no_answers || 'Ошибка: Варианты ответа отсутствуют.') + '</p>';
             } else {
                 console.log('Processing answers:', question.answers);
                 $.each(question.answers, function(ansIndex, answer) {
@@ -66,9 +63,9 @@ jQuery(document).ready(function($) {
         html += '</div>';
         html += '<div class="co-quiz-navigation">';
         if (quiz.allow_back && index > 0) {
-            html += '<button type="button" class="co-prev-question">' + (coQuiz.translations?.previous || 'Previous') + '</button>';
+            html += '<button type="button" class="co-prev-question">' + (coQuiz.translations?.previous || 'Назад') + '</button>';
         }
-        html += '<button type="button" class="co-next-question">' + (coQuiz.translations?.next || 'Next') + '</button>';
+        html += '<button type="button" class="co-next-question">' + (coQuiz.translations?.next || 'Далее') + '</button>';
         html += '</div>';
         html += '</div>';
 
@@ -77,7 +74,7 @@ jQuery(document).ready(function($) {
 
         // Обновление текста кнопки для последнего вопроса
         if (index === quiz.questions.length - 1) {
-            $('.co-next-question').text(coQuiz.translations?.submit_quiz || 'Submit Quiz').addClass('co-submit-quiz');
+            $('.co-next-question').text(coQuiz.translations?.submit_quiz || 'Завершить тест').addClass('co-submit-quiz');
         }
     }
 
@@ -113,7 +110,7 @@ jQuery(document).ready(function($) {
             }
             if (!isValid) {
                 console.warn('Validation failed for question ID:', question.id);
-                alert(coQuiz.translations?.please_answer || 'Please answer this question.');
+                alert(coQuiz.translations?.please_answer || 'Пожалуйста, ответьте на вопрос.');
                 return;
             }
         }
@@ -149,7 +146,7 @@ jQuery(document).ready(function($) {
                         showQuestion(currentQuestionIndex);
                     } else {
                         console.error('AJAX error response:', response);
-                        alert(coQuiz.translations?.error_submit || 'Error submitting answer: ' + (response.data?.message || 'Unknown error'));
+                        alert(coQuiz.translations?.error_submit || 'Ошибка при отправке ответа: ' + (response.data?.message || 'Неизвестная ошибка'));
                     }
                 },
                 error: function(xhr, status, error) {
@@ -158,7 +155,7 @@ jQuery(document).ready(function($) {
                         error: error,
                         responseText: xhr.responseText
                     });
-                    alert(coQuiz.translations?.error_submit || 'Error submitting answer. Please try again.');
+                    alert(coQuiz.translations?.error_submit || 'Ошибка при отправке ответа. Пожалуйста, попробуйте снова.');
                 }
             });
         } else {
@@ -199,16 +196,16 @@ jQuery(document).ready(function($) {
                         $('#co-quiz-questions').hide();
                         $('#co-quiz-thank-you').show();
                         if (quiz.show_results) {
-                            var resultsHtml = '<p>' + (coQuiz.translations?.your_score || 'Your total score: ') + totalScore + '</p>';
-                            resultsHtml += '<p>' + (coQuiz.translations?.recommendation || 'Recommendation: ') + 
-                                (totalScore > 50 ? (coQuiz.translations?.creative_roles || 'Consider creative or leadership roles.') : 
-                                (coQuiz.translations?.analytical_roles || 'Consider analytical or technical roles.')) + '</p>';
+                            var resultsHtml = '<p>' + (coQuiz.translations?.your_score || 'Ваш общий балл: ') + totalScore + '</p>';
+                            resultsHtml += '<p>' + (coQuiz.translations?.recommendation || 'Рекомендация: ') + 
+                                (totalScore > 50 ? (coQuiz.translations?.creative_roles || 'Рассмотрите творческие или руководящие роли.') : 
+                                (coQuiz.translations?.analytical_roles || 'Рассмотрите аналитические или технические роли.')) + '</p>';
                             $('#co-quiz-results').html(resultsHtml).show();
                             console.log('Results HTML rendered:', resultsHtml);
                         }
                     } else {
                         console.error('Final submission error:', response);
-                        alert(coQuiz.translations?.error_complete || 'Error completing quiz: ' + (response.data?.message || 'Unknown error'));
+                        alert(coQuiz.translations?.error_complete || 'Ошибка при завершении теста: ' + (response.data?.message || 'Неизвестная ошибка'));
                     }
                 },
                 error: function(xhr, status, error) {
@@ -217,7 +214,7 @@ jQuery(document).ready(function($) {
                         error: error,
                         responseText: xhr.responseText
                     });
-                    alert(coQuiz.translations?.error_complete || 'Error completing quiz. Please try again.');
+                    alert(coQuiz.translations?.error_complete || 'Ошибка при завершении теста. Пожалуйста, попробуйте снова.');
                 }
             });
         }
@@ -239,6 +236,6 @@ jQuery(document).ready(function($) {
         showQuestion(currentQuestionIndex);
     } else {
         console.error('No questions available for quiz_id=', quiz.quiz_id);
-        $('.co-quiz-container').html('<p>' + (coQuiz.translations?.no_questions || 'No questions available for this quiz.') + '</p>');
+        $('.co-quiz-container').html('<p>' + (coQuiz.translations?.no_questions || 'Вопросы для этого теста отсутствуют.') + '</p>');
     }
 });

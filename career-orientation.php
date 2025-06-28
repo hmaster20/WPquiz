@@ -14,10 +14,11 @@ if (!defined('ABSPATH')) {
 
 function co_install() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'co_results';
     $charset_collate = $wpdb->get_charset_collate();
 
-    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+    // Создание таблицы wp_co_results
+    $table_results = $wpdb->prefix . 'co_results';
+    $sql_results = "CREATE TABLE IF NOT EXISTS $table_results (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id BIGINT(20) UNSIGNED DEFAULT 0,
         quiz_id BIGINT(20) UNSIGNED NOT NULL,
@@ -29,8 +30,22 @@ function co_install() {
         PRIMARY KEY (id)
     ) $charset_collate;";
 
+    // Создание таблицы wp_co_answers
+    $table_answers = $wpdb->prefix . 'co_answers';
+    $sql_answers = "CREATE TABLE IF NOT EXISTS $table_answers (
+        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        quiz_id BIGINT(20) UNSIGNED NOT NULL,
+        question_id BIGINT(20) UNSIGNED NOT NULL,
+        answer_id BIGINT(20) UNSIGNED NOT NULL,
+        answer_text TEXT,
+        answer_weight INT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    dbDelta($sql_results);
+    dbDelta($sql_answers);
 
     flush_rewrite_rules();
 }
@@ -787,6 +802,54 @@ function co_analytics_page() {
     <?php
 }
 
+function co_answers_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
+    }
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_answers';
+    $answers = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC");
+    ?>
+    <div class="wrap">
+        <h1><?php _e('Answers', 'career-orientation'); ?></h1>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php _e('Quiz ID', 'career-orientation'); ?></th>
+                    <th><?php _e('Question ID', 'career-orientation'); ?></th>
+                    <th><?php _e('Answer ID', 'career-orientation'); ?></th>
+                    <th><?php _e('Answer Text', 'career-orientation'); ?></th>
+                    <th><?php _e('Weight', 'career-orientation'); ?></th>
+                    <th><?php _e('Created At', 'career-orientation'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($answers as $answer) : ?>
+                <tr>
+                    <td><?php echo esc_html($answer->quiz_id); ?></td>
+                    <td><?php echo esc_html($answer->question_id); ?></td>
+                    <td><?php echo esc_html($answer->answer_id); ?></td>
+                    <td><?php echo esc_html($answer->answer_text); ?></td>
+                    <td><?php echo esc_html($answer->answer_weight); ?></td>
+                    <td><?php echo esc_html($answer->created_at); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+add_action('admin_menu', function() {
+    add_submenu_page(
+        'co-menu',
+        __('Answers', 'career-orientation'),
+        __('Answers', 'career-orientation'),
+        'manage_options',
+        'co-answers',
+        'co_answers_page'
+    );
+});
+
 function co_reports_page() {
     if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
@@ -912,7 +975,7 @@ function co_quiz_shortcode($atts) {
     }
     $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
     $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.php', ['jquery'], '3.6', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.6', true);
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'quiz_id' => $quiz_id,
@@ -946,6 +1009,9 @@ function co_quiz_shortcode($atts) {
             'creative_roles' => __('Consider creative or leadership roles.', 'career-orientation'),
             'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation'),
             'no_questions' => __('No questions available for this quiz.', 'career-orientation'),
+            'loading' => __('Loading...', 'career-orientation'),
+            'thank_you' => __('Thank you for completing the quiz!', 'career-orientation'),
+            'of' => __('of', 'career-orientation'),
         ],
     ];
     wp_localize_script('co-quiz-script', 'coQuiz', $quiz_data);
@@ -978,7 +1044,8 @@ function co_handle_quiz_submission() {
     }
 
     global $wpdb;
-    $table_name = $wpdb->prefix . 'co_results';
+    $table_results = $wpdb->prefix . 'co_results';
+    $table_answers = $wpdb->prefix . 'co_answers';
     $quiz_id = intval($_POST['quiz_id']);
     $question_id = intval($_POST['question_id']);
     $answer_data = isset($_POST['answer']) ? $_POST['answer'] : '';
@@ -993,13 +1060,20 @@ function co_handle_quiz_submission() {
     if ($question_type === 'text') {
         $answer_text = sanitize_textarea_field($answer_data);
         error_log('co_handle_quiz_submission: Inserting text answer: ' . $answer_text);
-        $result = $wpdb->insert($table_name, [
+        $result = $wpdb->insert($table_results, [
             'user_id' => $user_id,
             'quiz_id' => $quiz_id,
             'question_id' => $question_id,
             'answer_id' => 0,
             'answer_weight' => 0,
             'answer_text' => $answer_text,
+        ]);
+        $wpdb->insert($table_answers, [
+            'quiz_id' => $quiz_id,
+            'question_id' => $question_id,
+            'answer_id' => 0,
+            'answer_text' => $answer_text,
+            'answer_weight' => 0,
         ]);
         if ($result === false) {
             error_log('co_handle_quiz_submission: Database error: ' . $wpdb->last_error);
@@ -1018,11 +1092,18 @@ function co_handle_quiz_submission() {
             }
             $answer = $answers[$answer_index];
             error_log('co_handle_quiz_submission: Inserting answer index=' . $answer_index . ', weight=' . $answer['weight']);
-            $result = $wpdb->insert($table_name, [
+            $result = $wpdb->insert($table_results, [
                 'user_id' => $user_id,
                 'quiz_id' => $quiz_id,
                 'question_id' => $question_id,
                 'answer_id' => $answer_index,
+                'answer_weight' => $answer['weight'],
+            ]);
+            $wpdb->insert($table_answers, [
+                'quiz_id' => $quiz_id,
+                'question_id' => $question_id,
+                'answer_id' => $answer_index,
+                'answer_text' => $answer['text'],
                 'answer_weight' => $answer['weight'],
             ]);
             if ($result === false) {
