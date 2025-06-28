@@ -2,7 +2,7 @@
 /*
 Plugin Name: Career Orientation
 Description: A WordPress plugin for career orientation with weighted answers, rubrics, analytics, and reports.
-Version: 3.0
+Version: 3.1
 Author: xAI
 License: GPL2
 Text Domain: career-orientation
@@ -31,6 +31,11 @@ function co_install() {
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
 
+    flush_rewrite_rules();
+}
+register_activation_hook(__FILE__, 'co_install');
+
+function co_register_types() {
     register_post_type('co_question', [
         'labels' => [
             'name' => __('Questions', 'career-orientation'),
@@ -62,10 +67,8 @@ function co_install() {
         'show_ui' => true,
         'show_in_menu' => 'co-menu',
     ]);
-
-    flush_rewrite_rules();
 }
-register_activation_hook(__FILE__, 'co_install');
+add_action('init', 'co_register_types');
 
 function co_admin_menu() {
     add_menu_page(
@@ -95,6 +98,7 @@ function co_admin_menu() {
     add_submenu_page(
         'co-menu',
         __('Reports', 'career-orientation'),
+        __('Reports', 'career-orientation'),
         'manage_options',
         'co-reports',
         'co_reports_page'
@@ -103,6 +107,9 @@ function co_admin_menu() {
 add_action('admin_menu', 'co_admin_menu');
 
 function co_overview_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
+    }
     ?>
     <div class="wrap">
         <h1><?php _e('Career Orientation', 'career-orientation'); ?></h1>
@@ -319,6 +326,9 @@ function co_save_quiz($post_id) {
 add_action('save_post_co_quiz', 'co_save_quiz');
 
 function co_analytics_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
+    }
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_results';
     $quizzes = get_posts(['post_type' => 'co_quiz', 'posts_per_page' => -1]);
@@ -335,11 +345,18 @@ function co_analytics_page() {
                 <label><?php _e('Rubric:', 'career-orientation'); ?></label>
                 <select name="rubric">
                     <option value=""><?php _e('All Rubrics', 'career-orientation'); ?></option>
-                    <?php foreach ($rubrics as $rubric) : ?>
-                    <option value="<?php echo esc_attr($rubric->slug); ?>" <?php selected($selected_rubric, $rubric->slug); ?>>
-                        <?php echo esc_html($rubric->name); ?>
-                    </option>
-                    <?php endforeach; ?>
+                    <?php
+                    if (!is_wp_error($rubrics) && !empty($rubrics)) {
+                        foreach ($rubrics as $rubric) {
+                            if (!is_object($rubric) || !isset($rubric->slug, $rubric->name)) continue;
+                            ?>
+                            <option value="<?php echo esc_attr($rubric->slug); ?>" <?php selected($selected_rubric, $rubric->slug); ?>>
+                                <?php echo esc_html($rubric->name); ?>
+                            </option>
+                            <?php
+                        }
+                    }
+                    ?>
                 </select>
             </p>
             <p>
@@ -352,7 +369,7 @@ function co_analytics_page() {
         </form>
         <?php
         $where = ['1=1'];
-        if ($selected_rubric) {
+        if ($selected_rubric && !is_wp_error($rubrics)) {
             $quiz_ids = get_posts([
                 'post_type' => 'co_quiz',
                 'posts_per_page' => -1,
@@ -461,6 +478,9 @@ function co_analytics_page() {
 }
 
 function co_reports_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
+    }
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_results';
     $users = get_users();
@@ -612,7 +632,7 @@ function co_quiz_shortcode($atts) {
 add_shortcode('career_quiz', 'co_quiz_shortcode');
 
 function co_enqueue_assets() {
-    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.0');
+    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . 'style.css', [], '3.1');
     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', [], '4.4.2', true);
 }
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');
