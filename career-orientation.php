@@ -47,7 +47,7 @@ function co_register_types() {
         ],
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => false, // Убрано автоматическое добавление в меню
+        'show_in_menu' => false,
         'supports' => ['title'],
     ]);
 
@@ -61,7 +61,7 @@ function co_register_types() {
         ],
         'public' => false,
         'show_ui' => true,
-        'show_in_menu' => false, // Убрано автоматическое добавление в меню
+        'show_in_menu' => false,
         'supports' => ['title'],
     ]);
 
@@ -719,68 +719,68 @@ function co_analytics_page() {
                         ];
                     }
                 }
-            ?>
-            <h2><?php echo esc_html($quiz->post_title); ?></h2>
-            <?php if (!empty($chart_data)) : ?>
-            <canvas id="chart-<?php echo esc_attr($quiz->ID); ?>" width="400" height="200"></canvas>
-            <?php endif; ?>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th><?php _e('Question', 'career-orientation'); ?></th>
-                        <th><?php _e('Answer', 'career-orientation'); ?></th>
-                        <th><?php _e('Weight', 'career-orientation'); ?></th>
-                        <th><?php _e('Responses', 'career-orientation'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($results as $result) : 
-                        $question = get_post($result->question_id);
-                        if (!$question) continue;
-                        $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
-                        $answer = $question_type === 'text' ? $result->answer_text : (isset(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]) ? get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]['text'] : '');
-                        if (!$answer) continue;
-                    ?>
-                    <tr>
-                        <td><?php echo esc_html($question->post_title); ?></td>
-                        <td><?php echo esc_html($answer); ?></td>
-                        <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
-                        <td><?php echo esc_html($result->count); ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php if (!empty($chart_data)) : ?>
-            <script>
-                jQuery(document).ready(function($) {
-                    if (typeof Chart !== 'undefined') {
-                        var ctx = document.getElementById('chart-<?php echo esc_js($quiz->ID); ?>').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: <?php echo json_encode(array_keys($chart_data)); ?>,
-                                datasets: [
-                                    <?php foreach ($chart_data as $question => $answers) : ?>
-                                    {
-                                        label: '<?php echo esc_js($question); ?>',
-                                        data: <?php echo json_encode(wp_list_pluck($answers, 'count')); ?>,
-                                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                        borderColor: 'rgba(75, 192, 192, 1)',
-                                        borderWidth: 1
-                                    },
-                                    <?php endforeach; ?>
-                                ]
-                            },
-                            options: {
-                                scales: {
-                                    y: { beginAtZero: true }
+                ?>
+                <h2><?php echo esc_html($quiz->post_title); ?></h2>
+                <?php if (!empty($chart_data)) : ?>
+                <canvas id="chart-<?php echo esc_attr($quiz->ID); ?>" width="400" height="200"></canvas>
+                <?php endif; ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('Question', 'career-orientation'); ?></th>
+                            <th><?php _e('Answer', 'career-orientation'); ?></th>
+                            <th><?php _e('Weight', 'career-orientation'); ?></th>
+                            <th><?php _e('Responses', 'career-orientation'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($results as $result) : 
+                            $question = get_post($result->question_id);
+                            if (!$question) continue;
+                            $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
+                            $answer = $question_type === 'text' ? $result->answer_text : (isset(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]) ? get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]['text'] : '');
+                            if (!$answer) continue;
+                            ?>
+                            <tr>
+                                <td><?php echo esc_html($question->post_title); ?></td>
+                                <td><?php echo esc_html($answer); ?></td>
+                                <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
+                                <td><?php echo esc_html($result->count); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php if (!empty($chart_data)) : ?>
+                <script>
+                    jQuery(document).ready(function($) {
+                        if (typeof Chart !== 'undefined') {
+                            var ctx = document.getElementById('chart-<?php echo esc_js($quiz->ID); ?>').getContext('2d');
+                            new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: <?php echo json_encode(array_keys($chart_data)); ?>,
+                                    datasets: [
+                                        <?php foreach ($chart_data as $question => $answers) : ?>
+                                        {
+                                            label: '<?php echo esc_js($question); ?>',
+                                            data: <?php echo json_encode(wp_list_pluck($answers, 'count')); ?>,
+                                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                            borderColor: 'rgba(75, 192, 192, 1)',
+                                            borderWidth: 1
+                                        },
+                                        <?php endforeach; ?>
+                                    ]
+                                },
+                                options: {
+                                    scales: {
+                                        y: { beginAtZero: true }
+                                    }
                                 }
-                            }
-                        });
-                    }
-                });
-            </script>
-            <?php endif; ?>
+                            });
+                        }
+                    });
+                </script>
+                <?php endif; ?>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
@@ -865,13 +865,13 @@ function co_reports_page() {
                     $user = $result->user_id ? get_userdata($result->user_id) : false;
                     $quiz = get_post($result->quiz_id);
                     if (!$quiz) continue;
-                ?>
-                <tr>
-                    <td><?php echo $user ? esc_html($user->display_name) : __('Guest', 'career-orientation'); ?></td>
-                    <td><?php echo esc_html($quiz->post_title); ?></td>
-                    <td><?php echo esc_html($result->quiz_date); ?></td>
-                    <td><?php echo esc_html($result->total_score); ?></td>
-                </tr>
+                    ?>
+                    <tr>
+                        <td><?php echo $user ? esc_html($user->display_name) : __('Guest', 'career-orientation'); ?></td>
+                        <td><?php echo esc_html($quiz->post_title); ?></td>
+                        <td><?php echo esc_html($result->quiz_date); ?></td>
+                        <td><?php echo esc_html($result->total_score); ?></td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -882,7 +882,8 @@ function co_reports_page() {
 function co_quiz_shortcode($atts) {
     $atts = shortcode_atts(['id' => 0], $atts);
     $quiz_id = intval($atts['id']);
-    error_log('co_quiz_shortcode: quiz_id=' . $quiz_id); // Отладка
+    error_log('co_quiz_shortcode: quiz_id=' . $quiz_id);
+
     if (!$quiz_id) {
         error_log('co_quiz_shortcode: Invalid quiz ID');
         return __('Invalid quiz ID', 'career-orientation');
@@ -911,7 +912,7 @@ function co_quiz_shortcode($atts) {
     }
     $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
     $allow_back = get_post_meta($quiz_id, '_co_allow_back', true) === 'yes';
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.6', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.php', ['jquery'], '3.6', true);
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'quiz_id' => $quiz_id,
@@ -928,6 +929,24 @@ function co_quiz_shortcode($atts) {
         'allow_back' => $allow_back,
         'show_results' => $show_results,
         'nonce' => wp_create_nonce('co_quiz_nonce'),
+        'translations' => [
+            'error_loading_quiz' => __('Error loading quiz. Please try again.', 'career-orientation'),
+            'error_question_not_found' => __('Error: Question not found.', 'career-orientation'),
+            'error_invalid_question' => __('Error: Invalid question data.', 'career-orientation'),
+            'error_no_answers' => __('Error: No answers available.', 'career-orientation'),
+            'enter_answer' => __('Enter your answer', 'career-orientation'),
+            'previous' => __('Previous', 'career-orientation'),
+            'next' => __('Next', 'career-orientation'),
+            'submit_quiz' => __('Submit Quiz', 'career-orientation'),
+            'please_answer' => __('Please answer this question.', 'career-orientation'),
+            'error_submit' => __('Error submitting answer. Please try again.', 'career-orientation'),
+            'error_complete' => __('Error completing quiz. Please try again.', 'career-orientation'),
+            'your_score' => __('Your total score: ', 'career-orientation'),
+            'recommendation' => __('Recommendation: ', 'career-orientation'),
+            'creative_roles' => __('Consider creative or leadership roles.', 'career-orientation'),
+            'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation'),
+            'no_questions' => __('No questions available for this quiz.', 'career-orientation'),
+        ],
     ];
     wp_localize_script('co-quiz-script', 'coQuiz', $quiz_data);
     error_log('co_quiz_shortcode: coQuiz=' . print_r($quiz_data, true));
@@ -941,7 +960,7 @@ function co_quiz_shortcode($atts) {
         <div id="co-quiz-results" style="display:none;"></div>
     </div>
     <script>
-        console.log('coQuiz:', <?php echo json_encode($quiz_data); ?>);
+        console.log('coQuiz initialized:', <?php echo json_encode($quiz_data, JSON_PRETTY_PRINT); ?>);
     </script>
     <?php
     return ob_get_clean();
@@ -949,19 +968,32 @@ function co_quiz_shortcode($atts) {
 add_shortcode('career_quiz', 'co_quiz_shortcode');
 
 function co_handle_quiz_submission() {
-    check_ajax_referer('co_quiz_nonce', 'nonce');
+    error_log('co_handle_quiz_submission: Received request');
+    error_log('POST data: ' . print_r($_POST, true));
+
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_nonce')) {
+        error_log('co_handle_quiz_submission: Invalid nonce');
+        wp_send_json_error(['message' => 'Invalid nonce']);
+        return;
+    }
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_results';
     $quiz_id = intval($_POST['quiz_id']);
     $question_id = intval($_POST['question_id']);
     $answer_data = isset($_POST['answer']) ? $_POST['answer'] : '';
     $user_id = get_current_user_id();
+
     error_log('co_handle_quiz_submission: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', answer=' . print_r($answer_data, true));
-    
+    error_log('co_handle_quiz_submission: user_id=' . $user_id);
+
     $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
+    error_log('co_handle_quiz_submission: question_type=' . $question_type);
+
     if ($question_type === 'text') {
         $answer_text = sanitize_textarea_field($answer_data);
-        $wpdb->insert($table_name, [
+        error_log('co_handle_quiz_submission: Inserting text answer: ' . $answer_text);
+        $result = $wpdb->insert($table_name, [
             'user_id' => $user_id,
             'quiz_id' => $quiz_id,
             'question_id' => $question_id,
@@ -969,22 +1001,39 @@ function co_handle_quiz_submission() {
             'answer_weight' => 0,
             'answer_text' => $answer_text,
         ]);
+        if ($result === false) {
+            error_log('co_handle_quiz_submission: Database error: ' . $wpdb->last_error);
+            wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
+            return;
+        }
     } else {
         $answers = get_post_meta($question_id, '_co_answers', true);
+        error_log('co_handle_quiz_submission: Available answers=' . print_r($answers, true));
         $answer_indices = $question_type === 'multiple_choice' ? (array)$answer_data : [$answer_data];
         foreach ($answer_indices as $answer_index) {
             $answer_index = intval($answer_index);
-            if (!isset($answers[$answer_index])) continue;
+            if (!isset($answers[$answer_index])) {
+                error_log('co_handle_quiz_submission: Invalid answer index: ' . $answer_index);
+                continue;
+            }
             $answer = $answers[$answer_index];
-            $wpdb->insert($table_name, [
+            error_log('co_handle_quiz_submission: Inserting answer index=' . $answer_index . ', weight=' . $answer['weight']);
+            $result = $wpdb->insert($table_name, [
                 'user_id' => $user_id,
                 'quiz_id' => $quiz_id,
                 'question_id' => $question_id,
                 'answer_id' => $answer_index,
                 'answer_weight' => $answer['weight'],
             ]);
+            if ($result === false) {
+                error_log('co_handle_quiz_submission: Database error: ' . $wpdb->last_error);
+                wp_send_json_error(['message' => 'Database error: ' . $wpdb->last_error]);
+                return;
+            }
         }
     }
+
+    error_log('co_handle_quiz_submission: Submission successful');
     wp_send_json_success();
 }
 add_action('wp_ajax_co_quiz_submit', 'co_handle_quiz_submission');
