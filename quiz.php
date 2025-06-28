@@ -16,6 +16,12 @@ jQuery(document).ready(function($) {
     var currentQuestionIndex = 0;
     var answers = {};
 
+    function updateProgressBar() {
+        var progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+        $('.progress-fill').css('width', progress + '%');
+        $('.progress-label').text('Прогресс: ' + Math.round(progress) + '%');
+    }
+
     function showQuestion(index) {
         console.log('showQuestion called with index:', index);
         var question = quiz.questions[index];
@@ -35,7 +41,8 @@ jQuery(document).ready(function($) {
         }
 
         console.log('Rendering question:', question.title);
-        var html = '<div class="co-question active" data-question-id="' + question.id + '">';
+        var html = '<div class="co-progress-bar"><div class="progress-label"></div><div class="progress-container"><div class="progress-fill"></div></div></div>';
+        html += '<div class="co-question active" data-question-id="' + question.id + '">';
         html += '<h3>' + question.title + '</h3>';
         html += '<div class="co-answer-options">';
 
@@ -74,6 +81,7 @@ jQuery(document).ready(function($) {
 
         console.log('Rendering HTML:', html);
         $('#co-quiz-questions').html(html);
+        updateProgressBar();
 
         // Обновление текста кнопки для последнего вопроса
         if (index === quiz.questions.length - 1) {
