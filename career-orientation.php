@@ -948,9 +948,11 @@ function co_quiz_shortcode($atts) {
         'nonce' => wp_create_nonce('co_quiz_nonce'),
         'quiz_id' => $quiz_id,
         'allow_back' => get_post_meta($quiz_id, '_co_allow_back', true) === 'yes',
+        'show_results' => get_post_meta($quiz_id, '_co_show_results', true) === 'yes', // Добавляем параметр
         'translations' => [
             'please_answer' => __('Please answer the question.', 'career-orientation'),
             'error_saving' => __('Error saving answer. Please try again.', 'career-orientation'),
+            'no_results' => __('No results available.', 'career-orientation'),
         ],
     ]);
     ob_start();
@@ -1002,10 +1004,12 @@ function co_quiz_shortcode($atts) {
             <button type="button" class="co-next-question"><?php _e('Next', 'career-orientation'); ?></button>
             <button type="button" class="co-submit-quiz" style="display:none;"><?php _e('Submit', 'career-orientation'); ?></button>
         </div>
-        <div id="co-quiz-results" style="display:none;"></div>
         <div id="co-quiz-thank-you" style="display:none;">
             <p><?php _e('Thank you for completing the quiz!', 'career-orientation'); ?></p>
         </div>
+        <?php if (get_post_meta($quiz_id, '_co_show_results', true) === 'yes') : ?>
+        <div id="co-quiz-results" style="display:none;"></div>
+        <?php endif; ?>
     </div>
     <?php
     return ob_get_clean();

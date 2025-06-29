@@ -1,6 +1,3 @@
-<?php
-header('Content-Type: application/javascript');
-?>
 jQuery(document).ready(function($) {
     console.log('quiz.js loaded successfully');
 
@@ -26,14 +23,12 @@ jQuery(document).ready(function($) {
         console.log('showQuestion called with index:', index);
         var question = quiz.questions[index];
         
-        // Проверка наличия вопроса
         if (!question) {
             console.error('Question not found at index:', index);
             $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_question_not_found || 'Error: Question not found.') + '</p>');
             return;
         }
         
-        // Проверка валидности данных вопроса
         if (!question.title || !question.id) {
             console.error('Invalid question data:', JSON.stringify(question, null, 2));
             $('.co-quiz-container').html('<p>' + (coQuiz.translations?.error_invalid_question || 'Error: Invalid question data.') + '</p>');
@@ -46,12 +41,10 @@ jQuery(document).ready(function($) {
         html += '<h3>' + question.title + '</h3>';
         html += '<div class="co-answer-options">';
 
-        // Обработка текстовых вопросов
         if (question.type === 'text') {
             console.log('Question type: text');
             html += '<textarea name="co_answer_' + question.id + '" ' + (question.required ? 'required' : '') + ' placeholder="' + (coQuiz.translations?.enter_answer || 'Enter your answer') + '"></textarea>';
         } else {
-            // Проверка наличия ответов
             if (!question.answers || !Array.isArray(question.answers)) {
                 console.error('Invalid answers for question ID:', question.id);
                 html += '<p>' + (coQuiz.translations?.error_no_answers || 'Error: No answers available.') + '</p>';
@@ -79,11 +72,15 @@ jQuery(document).ready(function($) {
         html += '</div>';
         html += '</div>';
 
+        if (quiz.show_results) {
+            html += '<div id="co-quiz-results" style="display:none;"></div>';
+        }
+        html += '<div id="co-quiz-thank-you" style="display:none;"><p>' + (coQuiz.translations?.thank_you || 'Thank you for completing the quiz!') + '</p></div>';
+
         console.log('Rendering HTML:', html);
         $('#co-quiz-questions').html(html);
         updateProgressBar();
 
-        // Обновление текста кнопки для последнего вопроса
         if (index === quiz.questions.length - 1) {
             $('.co-next-question').text(coQuiz.translations?.submit_quiz || 'Submit Quiz').addClass('co-submit-quiz');
         }
@@ -101,7 +98,7 @@ jQuery(document).ready(function($) {
             answer = $('input[name="co_answer_' + question.id + '"]:checked').val();
         }
         answers[question.id] = answer;
-        console.log('Saved answer for question_id=' + question.id + ':', JSON.stringify(answer));
+        console.log('Saved answer for question_id=' + question.id + ':', JSON drywall.stringify(answer));
         return answer;
     }
 
@@ -109,7 +106,6 @@ jQuery(document).ready(function($) {
         console.log('Next button clicked, currentQuestionIndex:', currentQuestionIndex);
         var question = quiz.questions[currentQuestionIndex];
         
-        // Проверка обязательности вопроса
         if (question.required) {
             var isValid = true;
             if (question.type === 'text') {
@@ -193,26 +189,28 @@ jQuery(document).ready(function($) {
                     console.log('Final submission success:', JSON.stringify(response, null, 2));
                     if (response.success) {
                         var totalScore = 0;
-                        $.each(quiz.questions, function(index, q) {
-                            if (q.type !== 'text' && answers[q.id]) {
-                                var indices = Array.isArray(answers[q.id]) ? answers[q.id] : [answers[q.id]];
-                                $.each(indices, function(i, index) {
-                                    if (q.answers[index]) {
-                                        totalScore += parseInt(q.answers[index].weight);
-                                    }
-                                });
-                            }
-                        });
-                        console.log('Calculated total score:', totalScore);
-                        $('#co-quiz-questions').hide();
-                        $('#co-quiz-thank-you').show();
                         if (quiz.show_results) {
+                            $.each(quiz.questions, function(index, q) {
+                                if (q.type !== 'text' && answers[q.id]) {
+                                    var indices = Array.isArray(answers[q.id]) ? answers[q.id] : [answers[q.id]];
+                                    $.each(indices, function(i, index) {
+                                        if (q.answers[index]) {
+                                            totalScore += parseInt(q.answers[index].weight);
+                                        }
+                                    });
+                                }
+                            });
+                            console.log('Calculated total score:', totalScore);
+                            $('#co-quiz-questions').hide();
+                            $('#co-quiz-thank-you').show();
                             var resultsHtml = '<p>' + (coQuiz.translations?.your_score || 'Your total score: ') + totalScore + '</p>';
                             resultsHtml += '<p>' + (coQuiz.translations?.recommendation || 'Recommendation: ') + 
                                 (totalScore > 50 ? (coQuiz.translations?.creative_roles || 'Consider creative or leadership roles.') : 
                                 (coQuiz.translations?.analytical_roles || 'Consider analytical or technical roles.')) + '</p>';
                             $('#co-quiz-results').html(resultsHtml).show();
-                            console.log('Results HTML rendered:', resultsHtml);
+                        } else {
+                            $('#co-quiz-questions').hide();
+                            $('#co-quiz-thank-you').show();
                         }
                     } else {
                         console.error('Final submission error:', response);
@@ -241,7 +239,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Инициализация викторины
     if (quiz.questions && quiz.questions.length > 0) {
         console.log('Starting quiz with', quiz.questions.length, 'questions');
         showQuestion(currentQuestionIndex);

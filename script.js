@@ -1,31 +1,24 @@
 jQuery(document).ready(function($) {
-    // Инициализация переменных
-    var $quizContainer = $('.co-quiz-container');
-    var $questions = $quizContainer.find('.co-question');
-    var totalQuestions = $questions.length;
-    var currentIndex = 0;
-    var allowBack = coQuiz.allow_back;
+    var currentQuestion = 0;
+    var totalQuestions = $('.co-question').length;
     var quizId = coQuiz.quiz_id;
+    var allowBack = coQuiz.allow_back;
+    var showResults = coQuiz.show_results; // Используем переданный параметр
 
-    // Инициализация прогресс-бара
     function updateProgress() {
-        var percentage = ((currentIndex + 1) / totalQuestions) * 100;
-        $quizContainer.find('.progress-fill').css('width', percentage + '%');
-        $quizContainer.find('.progress-label').text((currentIndex + 1) + ' / ' + totalQuestions);
+        var progress = ((currentQuestion + 1) / totalQuestions) * 100;
+        $('.progress-fill').css('width', progress + '%');
+        $('.progress-label').text((currentQuestion + 1) + ' / ' + totalQuestions);
     }
 
-    // Показать текущий вопрос
     function showQuestion(index) {
-        $questions.hide();
-        $questions.eq(index).show();
-        
-        // Управление видимостью кнопок
+        $('.co-question').hide();
+        $('.co-question').eq(index).show();
         if (index === 0) {
             $('.co-prev-question').hide();
         } else if (allowBack) {
             $('.co-prev-question').show();
         }
-        
         if (index === totalQuestions - 1) {
             $('.co-next-question').hide();
             $('.co-submit-quiz').show();
@@ -33,93 +26,31 @@ jQuery(document).ready(function($) {
             $('.co-next-question').show();
             $('.co-submit-quiz').hide();
         }
-        
         updateProgress();
     }
 
-    // Валидация ответа
-    function validateAnswer($question) {
+    function saveAnswer(next) {
+        var $question = $('.co-question').eq(currentQuestion);
         var questionId = $question.data('question-id');
-        var isRequired = $question.find('input[required], textarea[required]').length > 0;
-        var questionType = $question.find('input[type="radio"], input[type="checkbox"]').length > 0 ? 'choice' : 'text';
-        
-        if (isRequired) {
-            if (questionType === 'text') {
-                var answer = $question.find('textarea').val().trim();
-                if (!answer) {
-                    alert(coQuiz.translations.please_answer);
-                    return false;
-                }
-            } else {
-                var checked = $question.find('input:checked').length;
-                if (!checked) {
-                    alert(coQuiz.translations.please_answer);
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    // Обработка клика по кнопке "Следующий"
-    $('.co-next-question').on('click', function() {
-        var $currentQuestion = $questions.eq(currentIndex);
-        
-        // Валидация текущего вопроса
-        if (!validateAnswer($currentQuestion)) {
-            return;
-        }
-
-        // Сохранение ответа
-        saveAnswer($currentQuestion, false, function() {
-            if (currentIndex < totalQuestions - 1) {
-                currentIndex++;
-                showQuestion(currentIndex);
-            }
-        });
-    });
-
-    // Обработка клика по кнопке "Предыдущий"
-    $('.co-prev-question').on('click', function() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            showQuestion(currentIndex);
-        }
-    });
-
-    // Обработка клика по кнопке "Отправить"
-    $('.co-submit-quiz').on('click', function() {
-        var $currentQuestion = $questions.eq(currentIndex);
-        
-        // Валидация текущего вопроса
-        if (!validateAnswer($currentQuestion)) {
-            return;
-        }
-
-        // Сохранение последнего ответа и завершение опроса
-        saveAnswer($currentQuestion, true, function(response) {
-            $quizContainer.find('#co-questions, .co-quiz-navigation').hide();
-            if (response && response.results) {
-                $quizContainer.find('#co-quiz-results').html(response.results).show();
-            } else {
-                $quizContainer.find('#co-quiz-results').html('<p>' + coQuiz.translations.no_results + '</p>').show();
-            }
-            $quizContainer.find('#co-quiz-thank-you').show();
-        });
-    });
-
-    // Функция сохранения ответа через AJAX
-    function saveAnswer($question, isLast, callback) {
-        var questionId = $question.data('question-id');
-        var questionType = $question.find('input[type="radio"], input[type="checkbox"]').length > 0 ? 'choice' : 'text';
+        var questionType = $question.find('input[type=radio], input[type=checkbox]').length ? ($question.find('input[type=checkbox]').length ? 'multiple_choice' : 'select') : 'text';
         var answers = [];
-        
+        var isLast = (currentQuestion === totalQuestions - 1) && next;
+
         if (questionType === 'text') {
-            answers.push($question.find('textarea').val().trim());
+            var answerText = $question.find('textarea').val().trim();
+            if ($question.find('textarea').prop('required') && !answerText) {
+                alert(coQuiz.translations.please_answer);
+                return false;
+            }
+            answers.push(answerText);
         } else {
             $question.find('input:checked').each(function() {
                 answers.push($(this).val());
             });
+            if ($question.find('input').prop('required') && answers.length === 0) {
+                alert(coQuiz.translations.please_answer);
+                return false;
+            }
         }
 
         $.ajax({
@@ -131,25 +62,49 @@ jQuery(document).ready(function($) {
                 quiz_id: quizId,
                 question_id: questionId,
                 answers: answers,
-                is_last: isLast
+                is_last: isLast,
+                token: window.location.search.match(/co_quiz_token=([^&]+)/) ? window.location.search.match(/co_quiz_token=([^&]+)/)[1] : ''
             },
             success: function(response) {
                 if (response.success) {
-                    callback(response.data || {});
+                    if (isLast && showResults && response.data.results) {
+                        $('#co-quiz-results').html(response.data.results).show();
+                        $('#co-questions, .co-quiz-navigation').hide();
+                        $('#co-quiz-thank-you').show();
+                    } else if (isLast) {
+                        $('#co-questions, .co-quiz-navigation').hide();
+                        $('#co-quiz-thank-you').show();
+                    } else if (next) {
+                        currentQuestion++;
+                        showQuestion(currentQuestion);
+                    } else {
+                        currentQuestion--;
+                        showQuestion(currentQuestion);
+                    }
                 } else {
-                    alert(coQuiz.translations.error_saving);
+                    alert(response.data.message || coQuiz.translations.error_saving);
                 }
             },
             error: function() {
                 alert(coQuiz.translations.error_saving);
             }
         });
+        return true;
     }
 
-    // Инициализация первого вопроса
-    if (totalQuestions > 0) {
-        showQuestion(0);
-    } else {
-        $quizContainer.html('<p>' + coQuiz.translations.no_questions + '</p>');
-    }
+    $('.co-next-question').click(function() {
+        saveAnswer(true);
+    });
+
+    $('.co-prev-question').click(function() {
+        if (allowBack) {
+            saveAnswer(false);
+        }
+    });
+
+    $('.co-submit-quiz').click(function() {
+        saveAnswer(true);
+    });
+
+    showQuestion(currentQuestion);
 });
