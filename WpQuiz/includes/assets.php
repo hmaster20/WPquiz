@@ -5,9 +5,15 @@ if (!defined('ABSPATH')) {
 
 function co_enqueue_assets() {
     wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . '../style.css', [], '3.7');
-    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', [], '4.4.2', true);
+    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
 }
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');
+
+function co_admin_enqueue_assets() {
+    wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . '../style.css', [], '3.7');
+    wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
+}
+add_action('admin_enqueue_scripts', 'co_admin_enqueue_assets');
 
 function co_admin_styles() {
     ?>
@@ -33,6 +39,12 @@ function co_admin_styles() {
         }
         .co-unique-links-table .column-status {
             width: 15%;
+        }
+        canvas {
+            display: block !important;
+            width: 100% !important;
+            max-width: 400px;
+            height: 200px;
         }
     </style>
     <?php
@@ -73,6 +85,12 @@ function co_admin_scripts() {
                     }
                 });
             });
+            // Проверка загрузки Chart.js
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js is not loaded');
+            } else {
+                console.log('Chart.js loaded successfully');
+            }
         });
     </script>
     <?php
