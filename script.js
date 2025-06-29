@@ -99,8 +99,10 @@ jQuery(document).ready(function($) {
         // Сохранение последнего ответа и завершение опроса
         saveAnswer($currentQuestion, true, function(response) {
             $quizContainer.find('#co-questions, .co-quiz-navigation').hide();
-            if (response.results) {
+            if (response && response.results) {
                 $quizContainer.find('#co-quiz-results').html(response.results).show();
+            } else {
+                $quizContainer.find('#co-quiz-results').html('<p>' + coQuiz.translations.no_results + '</p>').show();
             }
             $quizContainer.find('#co-quiz-thank-you').show();
         });
@@ -133,7 +135,7 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success) {
-                    callback(response.data);
+                    callback(response.data || {});
                 } else {
                     alert(coQuiz.translations.error_saving);
                 }
