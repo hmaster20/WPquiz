@@ -1,0 +1,22 @@
+#toplevel_page_co-dashboard .wp-menu-name {
+    font-weight: bold;
+}
+.co-answer-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.co-answer-options label {
+    flex: 0 0 auto;
+    margin: 0;
+}
+.co-unique-links-table th, .co-unique-links-table td {
+    padding: 10px;
+    vertical-align: middle;
+}
+.co-unique-links-table .column-token {
+    width: 30%;
+}
+.co-unique-links-table .column-status {
+    width: 15%;
+}

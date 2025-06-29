@@ -5,38 +5,46 @@ if (!defined('ABSPATH')) {
 
 function co_admin_menu() {
     add_menu_page(
-        __('Career Orientation', 'career-orientation'),
+        __('Career Orientation Dashboard', 'career-orientation'),
         __('Career Orientation', 'career-orientation'),
         'manage_options',
-        'co-menu',
-        'co_overview_page',
-        'dashicons-book-alt',
+        'co-dashboard',
+        'co_dashboard_page',
+        'dashicons-chart-bar',
         10
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
+        __('Dashboard', 'career-orientation'),
+        __('Dashboard', 'career-orientation'),
+        'manage_options',
+        'co-dashboard',
+        'co_dashboard_page'
+    );
+    add_submenu_page(
+        'co-dashboard',
         __('Overview', 'career-orientation'),
         __('Overview', 'career-orientation'),
         'manage_options',
-        'co-menu',
+        'co-overview',
         'co_overview_page'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Questions', 'career-orientation'),
         __('Questions', 'career-orientation'),
         'manage_options',
         'edit.php?post_type=co_question'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Quizzes', 'career-orientation'),
         __('Quizzes', 'career-orientation'),
         'manage_options',
         'edit.php?post_type=co_quiz'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Analytics', 'career-orientation'),
         __('Analytics', 'career-orientation'),
         'manage_options',
@@ -44,7 +52,7 @@ function co_admin_menu() {
         'co_analytics_page'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Reports', 'career-orientation'),
         __('Reports', 'career-orientation'),
         'manage_options',
@@ -52,7 +60,7 @@ function co_admin_menu() {
         'co_reports_page'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Links', 'career-orientation'),
         __('Links', 'career-orientation'),
         'manage_options',
@@ -60,14 +68,14 @@ function co_admin_menu() {
         'co_unique_links_page'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Categories', 'career-orientation'),
         __('Categories', 'career-orientation'),
         'manage_options',
         'edit-tags.php?taxonomy=co_category&post_type=co_quiz'
     );
     add_submenu_page(
-        'co-menu',
+        'co-dashboard',
         __('Rubrics', 'career-orientation'),
         __('Rubrics', 'career-orientation'),
         'manage_options',
@@ -79,7 +87,7 @@ add_action('admin_menu', 'co_admin_menu');
 function co_fix_taxonomy_menu($parent_file) {
     global $submenu_file;
     if (isset($_GET['taxonomy']) && in_array($_GET['taxonomy'], ['co_category', 'co_rubric']) && isset($_GET['post_type'])) {
-        $parent_file = 'co-menu';
+        $parent_file = 'co-dashboard';
         $submenu_file = 'edit-tags.php?taxonomy=' . $_GET['taxonomy'] . '&post_type=' . $_GET['post_type'];
     }
     return $parent_file;
