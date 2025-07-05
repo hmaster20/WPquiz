@@ -14,145 +14,132 @@ function co_handle_quiz_submission() {
     $answers = isset($_POST['answers']) ? (array)$_POST['answers'] : [];
     $session_id = isset($_POST['session_id']) ? sanitize_text_field($_POST['session_id']) : '';
     $token = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
-    
+
     error_log('Received quiz submission: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id . ', token=' . $token);
 
     if ($token) {
         global $wpdb;
         $table_name = $wpdb->prefix . 'co_unique_links';
-        $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s AND is_used = 1", $token));
+        // Проверяем, что токен использован и соответствует переданному quiz_id
+        // Мы используем IS NOT NULL для used_at, чтобы убедиться, что он был использован
+        $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s AND quiz_id = %d AND used_at IS NOT NULL", $token, $quiz_id));
         if (!$link) {
-            wp_send_json_error(['message' => __('Invalid or unused quiz token.', 'career-orientation')]);
-            error_log('Quiz submission failed: Invalid or unused token: ' . $token);
+            wp_send_json_error(['message' => __('Invalid or unused token.', 'career-orientation')]);
+            error_log('Quiz submission failed: Invalid or unused token for quiz_id=' . $quiz_id . ' token=' . $token);
+            return;
+        }
+        // Можно также добавить проверку, что quiz_id из токена совпадает с quiz_id из AJAX запроса
+        if ($link->quiz_id != $quiz_id) {
+             wp_send_json_error(['message' => __('Quiz ID mismatch for token.', 'career-orientation')]);
+             error_log('Quiz submission failed: Quiz ID mismatch. Token quiz_id=' . $link->quiz_id . ', Request quiz_id=' . $quiz_id);
+             return;
+        }
+    }
+
+    if (!$quiz_id || !get_post($quiz_id) || get_post($quiz_id)->post_type !== 'co_quiz') {
+        wp_send_json_error(['message' => __('Invalid quiz ID', 'career-orientation')]);
+        error_log('Quiz submission failed: Invalid quiz ID ' . $quiz_id);
+        return;
+    }
+    if (!$question_id || !get_post($question_id) || get_post($question_id)->post_type !== 'co_question') {
+        wp_send_json_error(['message' => __('Invalid question ID', 'career-orientation')]);
+        error_log('Quiz submission failed: Invalid question ID ' . $question_id);
+        return;
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'co_quiz_results';
+
+    $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
+    $answer_text = '';
+    $answer_ids = [];
+    $answer_weights = [];
+
+    if ($question_type === 'text') {
+        $answer_text = sanitize_text_field($answers[0] ?? '');
+        // For text answers, we don't have answer_ids or weights from predefined options
+    } else {
+        $predefined_answers = get_post_meta($question_id, '_co_answers', true) ?: [];
+        foreach ($answers as $ans_id) {
+            $ans_id = intval($ans_id);
+            if (isset($predefined_answers[$ans_id])) {
+                $answer_ids[] = $ans_id;
+                $answer_weights[] = $predefined_answers[$ans_id]['weight'];
+            }
+        }
+        if (empty($answer_ids) && $question_type !== 'text') {
+            wp_send_json_error(['message' => __('No valid answers provided.', 'career-orientation')]);
+            error_log('Quiz submission failed: No valid answers for question ' . $question_id);
             return;
         }
     }
 
-    $question = get_post($question_id);
-    if (!$question || $question->post_type !== 'co_question' || !get_post($quiz_id) || get_post($quiz_id)->post_type !== 'co_quiz') {
-        wp_send_json_error(['message' => __('Invalid quiz or question ID.', 'career-orientation')]);
-        error_log('Quiz submission failed: Invalid quiz_id=' . $quiz_id . ' or question_id=' . $question_id);
-        return;
-    }
-    $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'co_results';
-    $user_id = get_current_user_id();
-
-    if ($question_type === 'text') {
-        $answer_text = sanitize_textarea_field($answers[0]);
-        $result = $wpdb->insert($table_name, [
-            'user_id' => $user_id,
-            'quiz_id' => $quiz_id,
-            'question_id' => $question_id,
-            'answer_id' => 0,
-            'answer_weight' => 0,
-            'answer_text' => $answer_text,
-            'quiz_date' => current_time('mysql'),
-            'session_id' => $session_id
+    // Сохраняем ответы
+    foreach ($answer_ids as $index => $answer_id) {
+        $wpdb->insert($table_name, [
+            'quiz_id'       => $quiz_id,
+            'user_id'       => get_current_user_id(), // 0 для неавторизованных пользователей
+            'session_id'    => $session_id,
+            'question_id'   => $question_id,
+            'answer_id'     => $answer_id,
+            'answer_text'   => '', // Текстовый ответ сохраняется только для типа 'text'
+            'answer_weight' => $answer_weights[$index],
+            'quiz_date'     => current_time('mysql'),
         ]);
-        error_log('Text answer saved: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id . ', text="' . $answer_text . '"');
-    } else {
-        $stored_answers = get_post_meta($question_id, '_co_answers', true) ?: [];
-        foreach ($answers as $answer_id) {
-            $answer_id = intval($answer_id);
-            if (!isset($stored_answers[$answer_id])) {
-                error_log('Invalid answer_id=' . $answer_id . ' for question_id=' . $question_id);
-                continue;
-            }
-            $result = $wpdb->insert($table_name, [
-                'user_id' => $user_id,
-                'quiz_id' => $quiz_id,
-                'question_id' => $question_id,
-                'answer_id' => $answer_id,
-                'answer_weight' => intval($stored_answers[$answer_id]['weight']),
-                'answer_text' => '',
-                'quiz_date' => current_time('mysql'),
-                'session_id' => $session_id
-            ]);
-            error_log('Answer saved: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', answer_id=' . $answer_id . ', weight=' . $stored_answers[$answer_id]['weight'] . ', session_id=' . $session_id);
-            if ($question_type === 'select') {
-                break;
-            }
-        }
     }
-    if ($result === false) {
-        wp_send_json_error(['message' => __('Database error.', 'career-orientation')]);
-        error_log('Database error: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id);
-        return;
+    if ($question_type === 'text' && !empty($answer_text)) {
+         $wpdb->insert($table_name, [
+            'quiz_id'       => $quiz_id,
+            'user_id'       => get_current_user_id(),
+            'session_id'    => $session_id,
+            'question_id'   => $question_id,
+            'answer_id'     => 0, // 0 для текстовых ответов, так как нет предопределенного ID
+            'answer_text'   => $answer_text,
+            'answer_weight' => 0, // Вес для текстовых ответов обычно 0
+            'quiz_date'     => current_time('mysql'),
+        ]);
     }
-    $show_results = get_post_meta($quiz_id, '_co_show_results', true) === 'yes';
-    if ($show_results && isset($_POST['is_last']) && $_POST['is_last']) {
-        $results = $wpdb->get_results($wpdb->prepare(
-            "SELECT question_id, answer_id, answer_weight, answer_text 
-             FROM $table_name 
-             WHERE quiz_id = %d AND session_id = %s",
-            $quiz_id, $session_id
-        ));
-        error_log('Results fetched: quiz_id=' . $quiz_id . ', session_id=' . $session_id . ', count=' . count($results));
-        $output = '<h3>' . __('Your Results', 'career-orientation') . '</h3><ul>';
-        $total_weight = 0;
-        foreach ($results as $result) {
-            $question = get_post($result->question_id);
-            if (!$question) {
-                error_log('Question not found: question_id=' . $result->question_id);
-                continue;
-            }
-            if ($result->answer_text) {
-                $output .= '<li>' . esc_html($question->post_title) . ': ' . esc_html($result->answer_text) . '</li>';
-            } else {
-                $answers = get_post_meta($result->question_id, '_co_answers', true);
-                if (isset($answers[$result->answer_id])) {
-                    $output .= '<li>' . esc_html($question->post_title) . ': ' . esc_html($answers[$result->answer_id]['text']) . ' (' . __('Weight', 'career-orientation') . ': ' . $result->answer_weight . ')</li>';
-                    $total_weight += $result->answer_weight;
-                }
-            }
-        }
-        $output .= '</ul>';
-        if ($total_weight > 0) {
-            $output .= '<p>' . __('Total Weight', 'career-orientation') . ': ' . $total_weight . '</p>';
-            $output .= '<p>' . __('Recommendation: ', 'career-orientation') . 
-                ($total_weight > 50 ? __('Consider creative or leadership roles.', 'career-orientation') : 
-                __('Consider analytical or technical roles.', 'career-orientation')) . '</p>';
-        }
-        wp_send_json_success(['results' => $output]);
-        error_log('Results sent: quiz_id=' . $quiz_id . ', session_id=' . $session_id . ', output_length=' . strlen($output));
-    } else {
-        wp_send_json_success();
-        error_log('Submission successful: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id);
-    }
+
+
+    wp_send_json_success(['message' => __('Answer saved successfully!', 'career-orientation')]);
 }
-add_action('wp_ajax_co_quiz_submission', 'co_handle_quiz_submission');
-add_action('wp_ajax_nopriv_co_quiz_submission', 'co_handle_quiz_submission');
+add_action('wp_ajax_co_handle_quiz_submission', 'co_handle_quiz_submission');
+add_action('wp_ajax_nopriv_co_handle_quiz_submission', 'co_handle_quiz_submission');
 
 function co_handle_quiz_entry() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_entry_nonce')) {
         wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
         return;
     }
-    $token = sanitize_text_field($_POST['token']);
-    $full_name = sanitize_text_field($_POST['full_name']);
-    $phone = sanitize_text_field($_POST['phone']);
-    $email = sanitize_email($_POST['email']);
-    if (!$full_name || !$phone || !$email) {
-        wp_send_json_error(['message' => __('Please fill in all fields.', 'career-orientation')]);
+
+    $token = sanitize_text_field($_POST['token'] ?? '');
+    $full_name = sanitize_text_field($_POST['full_name'] ?? '');
+    $phone = sanitize_text_field($_POST['phone'] ?? '');
+    $email = sanitize_email($_POST['email'] ?? '');
+
+    if (empty($token) || empty($full_name) || empty($phone) || empty($email)) {
+        wp_send_json_error(['message' => __('All fields are required.', 'career-orientation')]);
         return;
     }
+
     if (!is_email($email)) {
         wp_send_json_error(['message' => __('Invalid email address.', 'career-orientation')]);
         return;
     }
+    // Дополнительная валидация телефона, если нужна
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_unique_links';
-    $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s", $token));
+
+    // Проверяем токен и обновляем его статус
+    $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s AND is_used = 0", $token));
+
     if (!$link) {
-        wp_send_json_error(['message' => __('Invalid quiz token.', 'career-orientation')]);
+        wp_send_json_error(['message' => __('Invalid or expired link.', 'career-orientation')]);
         return;
     }
-    if ($link->is_used) {
-        wp_send_json_error(['message' => __('This quiz link has already been used.', 'career-orientation')]);
-        return;
-    }
+
+    // Обновляем запись о ссылке
     $result = $wpdb->update($table_name, [
         'full_name' => $full_name,
         'phone' => $phone,
@@ -160,6 +147,7 @@ function co_handle_quiz_entry() {
         'is_used' => 1,
         'used_at' => current_time('mysql'),
     ], ['token' => $token]);
+
     if ($result === false) {
         wp_send_json_error(['message' => __('Database error.', 'career-orientation')]);
         return;
@@ -185,14 +173,19 @@ function co_generate_unique_link() {
     $result = $wpdb->insert($table_name, [
         'quiz_id' => $quiz_id,
         'token' => $token,
-        'is_used' => 0,
         'created_at' => current_time('mysql'),
+        'is_used' => 0, // По умолчанию ссылка не использована
     ]);
+
     if ($result === false) {
-        wp_send_json_error(['message' => __('Database error', 'career-orientation')]);
+        wp_send_json_error(['message' => __('Error saving link to database.', 'career-orientation')]);
         return;
     }
-    wp_send_json_success();
+
+    // НОВОЕ: Генерация ссылки на виртуальную страницу
+    $quiz_link = home_url('/quiz-entry/?co_quiz_token=' . $token);
+
+    wp_send_json_success(['link' => $quiz_link, 'message' => __('Link generated successfully!', 'career-orientation')]);
 }
 add_action('wp_ajax_co_generate_unique_link', 'co_generate_unique_link');
-?>
+add_action('wp_ajax_nopriv_co_generate_unique_link', 'co_generate_unique_link');
