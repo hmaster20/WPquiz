@@ -2,8 +2,8 @@
 /*
 Plugin Name: Career Orientation
 Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, reports, and one-time quiz links.
-Version: 3.7
-Author: xAI
+Version: 1.4
+Author: Hmaster20
 License: GPL2
 Text Domain: career-orientation
 */
