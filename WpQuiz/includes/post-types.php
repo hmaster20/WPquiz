@@ -39,7 +39,7 @@ function co_register_types() {
         ],
         'hierarchical' => true,
         'show_ui' => true,
-        'show_in_menu' => 'co-menu',
+        'show_in_menu' => 'co-dashboard',
     ]);
 
     register_taxonomy('co_rubric', 'co_question', [
@@ -49,7 +49,7 @@ function co_register_types() {
         ],
         'hierarchical' => true,
         'show_ui' => true,
-        'show_in_menu' => 'co-menu',
+        'show_in_menu' => 'co-dashboard',
     ]);
 }
 add_action('init', 'co_register_types');

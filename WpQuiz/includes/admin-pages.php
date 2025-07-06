@@ -331,7 +331,7 @@ function co_analytics_page() {
                 <h2 class="co-quiz-title"><?php echo esc_html($quiz->post_title); ?> <span class="co-toggle-chart">[<?php _e('Toggle Chart', 'career-orientation'); ?>]</span></h2>
                 <?php if (!empty($labels) && !empty($datasets)) : ?>
                 <div class="co-chart-container">
-                    <canvas id="chart-<?php echo esc_attr($quiz->ID); ?>" width="400" height="200"></canvas>
+                <canvas id="chart-<?php echo esc_attr($quiz->ID); ?>"></canvas>
                 </div>
                 <?php endif; ?>
                 <table class="wp-list-table widefat fixed striped">
@@ -518,34 +518,38 @@ function co_reports_page() {
                         $link = $wpdb->get_row($wpdb->prepare("SELECT email FROM $link_table WHERE quiz_id = %d AND session_id = %s", $quiz_id, $session_id));
                         ?>
                         <h3><?php _e('Session', 'career-orientation'); ?>: <?php echo esc_html($session_id); ?> (<?php echo $user ? esc_html($user->display_name) : ($link ? esc_html($link->email) : __('Anonymous', 'career-orientation')); ?>, <?php echo esc_html(date_i18n('d.m.Y H:i', strtotime($result->quiz_date))); ?>)</h3>
-                        <table class="wp-list-table widefat fixed striped">
-                            <thead>
-                                <tr>
-                                    <th><?php _e('Question', 'career-orientation'); ?></th>
-                                    <th><?php _e('Answer', 'career-orientation'); ?></th>
-                                    <th><?php _e('Weight', 'career-orientation'); ?></th>
-                                    <th><?php _e('Date', 'career-orientation'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php _e('User', 'career-orientation'); ?></th>
+                    <th><?php _e('Quiz', 'career-orientation'); ?></th>
+                    <th><?php _e('Question', 'career-orientation'); ?></th>
+                    <th><?php _e('Answer', 'career-orientation'); ?></th>
+                    <th><?php _e('Weight', 'career-orientation'); ?></th>
+                    <th><?php _e('Date', 'career-orientation'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
                                 <?php 
                                 $detailed_results = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE quiz_id = %d AND session_id = %s", $quiz_id, $session_id));
                                 foreach ($detailed_results as $result) : 
-                                    $question = get_post($result->question_id);
+                    $question = get_post($result->question_id);
                                     if (!$question) continue;
-                                    $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
+                    $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
                                     $answer = $question_type === 'text' ? esc_html($result->answer_text) : (isset(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]) ? esc_html(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]['text']) : '');
-                                    if (!$answer) continue;
-                                    ?>
-                                    <tr>
-                                        <td><?php echo esc_html($question->post_title); ?></td>
-                                        <td><?php echo esc_html($answer); ?></td>
-                                        <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
-                                        <td><?php echo esc_html($result->quiz_date); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                    if (!$answer) continue;
+                    ?>
+                    <tr>
+                        <td><?php echo $user ? esc_html($user->display_name) : __('Anonymous', 'career-orientation'); ?></td>
+                        <td><?php echo esc_html($quiz->post_title); ?></td>
+                        <td><?php echo esc_html($question->post_title); ?></td>
+                        <td><?php echo esc_html($answer); ?></td>
+                        <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
+                        <td><?php echo esc_html($result->quiz_date); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
                     <?php endforeach; ?>
                 </div>
             <?php endforeach; ?>
