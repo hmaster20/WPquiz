@@ -90,31 +90,38 @@ function co_handle_quiz_submission() {
             $quiz_id, $session_id
         ));
         error_log('Results fetched: quiz_id=' . $quiz_id . ', session_id=' . $session_id . ', count=' . count($results));
-        $output = '<h3>' . __('Your Results', 'career-orientation') . '</h3><ul>';
-        $total_weight = 0;
-        foreach ($results as $result) {
-            $question = get_post($result->question_id);
-            if (!$question) {
-                error_log('Question not found: question_id=' . $result->question_id);
-                continue;
-            }
-            if ($result->answer_text) {
-                $output .= '<li>' . esc_html($question->post_title) . ': ' . esc_html($result->answer_text) . '</li>';
-            } else {
-                $answers = get_post_meta($result->question_id, '_co_answers', true);
-                if (isset($answers[$result->answer_id])) {
-                    $output .= '<li>' . esc_html($question->post_title) . ': ' . esc_html($answers[$result->answer_id]['text']) . ' (' . __('Weight', 'career-orientation') . ': ' . $result->answer_weight . ')</li>';
-                    $total_weight += $result->answer_weight;
+        
+        // Расчет средних весов по рубрикам
+        $weights = [];
+        $rubrics = [
+            'competence' => [1, 9, 17, 25, 33],
+            'management' => [2, 10, 18, 26, 34],
+            'autonomy' => [3, 11, 19, 27, 35],
+            'job_stability' => [4, 12, 36],
+            'residence_stability' => [20, 28, 41],
+            'service' => [5, 13, 21, 29, 37],
+            'challenge' => [6, 14, 22, 30, 38],
+            'lifestyle' => [7, 15, 23, 31, 39],
+            'entrepreneurship' => [8, 16, 24, 32, 40]
+        ];
+        foreach ($rubrics as $rubric => $question_ids) {
+            $sum = 0;
+            $count = 0;
+            foreach ($results as $result) {
+                $question = get_post($result->question_id);
+                if (in_array(get_post_meta($result->question_id, '_question_index', true), $question_ids)) {
+                    $sum += $result->answer_weight;
+                    $count++;
                 }
             }
+            $weights[$rubric] = $count > 0 ? round($sum / $count) : 0;
+        }
+
+        $output = '<h3>' . __('Your Results', 'career-orientation') . '</h3><ul>';
+        foreach ($weights as $rubric => $weight) {
+            $output .= '<li>' . esc_html(ucfirst(str_replace('_', ' ', $rubric))) . ': ' . $weight . '</li>';
         }
         $output .= '</ul>';
-        if ($total_weight > 0) {
-            $output .= '<p>' . __('Total Weight', 'career-orientation') . ': ' . $total_weight . '</p>';
-            $output .= '<p>' . __('Recommendation: ', 'career-orientation') . 
-                ($total_weight > 50 ? __('Consider creative or leadership roles.', 'career-orientation') : 
-                __('Consider analytical or technical roles.', 'career-orientation')) . '</p>';
-        }
         wp_send_json_success(['results' => $output]);
         error_log('Results sent: quiz_id=' . $quiz_id . ', session_id=' . $session_id . ', output_length=' . strlen($output));
     } else {
@@ -140,6 +147,14 @@ function co_handle_quiz_entry() {
     }
     if (!is_email($email)) {
         wp_send_json_error(['message' => __('Invalid email address.', 'career-orientation')]);
+        return;
+    }
+    if (count(explode(' ', trim($full_name))) !== 3) {
+        wp_send_json_error(['message' => __('Full name must consist of three words.', 'career-orientation')]);
+        return;
+    }
+    if (!preg_match('/^\+?[0-9\s\-]{9,14}$/', preg_replace('/\s+/', '', $phone))) {
+        wp_send_json_error(['message' => __('Invalid phone number.', 'career-orientation')]);
         return;
     }
     global $wpdb;
