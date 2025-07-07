@@ -1,3 +1,14 @@
+-- Перед выполнением запроса выполните:
+-- SELECT slug, COUNT(*) FROM wp_terms GROUP BY slug HAVING COUNT(*) > 1;
+-- Это покажет, есть ли в таблице wp_terms дублирующиеся slug. 
+-- Если дубликаты есть, рекомендуется их удалить, используя закомментированный блок очистки.
+
+-- Очистка существующих рубрик с одинаковыми slug (опционально, раскомментировать при необходимости)
+-- DELETE t1 FROM wp_terms t1
+-- INNER JOIN wp_terms t2 
+-- WHERE t1.term_id > t2.term_id 
+-- AND t1.slug = t2.slug;
+
 -- Создание теста (co_quiz)
 INSERT INTO wp_posts (post_title, post_name, post_type, post_status, post_date, post_modified)
 VALUES ('Детская версия профориентации', 'my-needs-kid', 'co_quiz', 'publish', NOW(), NOW());
@@ -5,41 +16,77 @@ VALUES ('Детская версия профориентации', 'my-needs-ki
 -- Получение ID созданного теста
 SET @quiz_id = LAST_INSERT_ID();
 
--- Создание рубрик (co_rubric)
+-- Создание рубрик (co_rubric), если они еще не существуют
 INSERT INTO wp_terms (name, slug, term_group)
-VALUES
-    ('Компетенции', 'competence', 0),
-    ('Управление', 'management', 0),
-    ('Автономия', 'autonomy', 0),
-    ('Стабильность работы', 'job_stability', 0),
-    ('Стабильность проживания', 'residence_stability', 0),
-    ('Служение', 'service', 0),
-    ('Вызов', 'challenge', 0),
-    ('Образ жизни', 'lifestyle', 0),
-    ('Предпринимательство', 'entrepreneurship', 0);
+SELECT * FROM (SELECT 'Компетенции', 'competence', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'competence') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Управление', 'management', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'management') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Автономия', 'autonomy', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'autonomy') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Стабильность работы', 'job_stability', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'job_stability') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Стабильность проживания', 'residence_stability', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'residence_stability') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Служение', 'service', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'service') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Вызов', 'challenge', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'challenge') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Образ жизни', 'lifestyle', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'lifestyle') LIMIT 1;
+INSERT INTO wp_terms (name, slug, term_group)
+SELECT * FROM (SELECT 'Предпринимательство', 'entrepreneurship', 0) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM wp_terms WHERE slug = 'entrepreneurship') LIMIT 1;
 
--- Получение ID рубрик
-SET @competence_id = (SELECT term_id FROM wp_terms WHERE slug = 'competence');
-SET @management_id = (SELECT term_id FROM wp_terms WHERE slug = 'management');
-SET @autonomy_id = (SELECT term_id FROM wp_terms WHERE slug = 'autonomy');
-SET @job_stability_id = (SELECT term_id FROM wp_terms WHERE slug = 'job_stability');
-SET @residence_stability_id = (SELECT term_id FROM wp_terms WHERE slug = 'residence_stability');
-SET @service_id = (SELECT term_id FROM wp_terms WHERE slug = 'service');
-SET @challenge_id = (SELECT term_id FROM wp_terms WHERE slug = 'challenge');
-SET @lifestyle_id = (SELECT term_id FROM wp_terms WHERE slug = 'lifestyle');
-SET @entrepreneurship_id = (SELECT term_id FROM wp_terms WHERE slug = 'entrepreneurship');
+-- Чтобы предотвратить создание дубликатов в будущем, добавьте уникальный индекс на поле slug в таблице wp_terms:
+ALTER TABLE wp_terms ADD UNIQUE INDEX idx_slug (slug);
 
+-- Получение ID рубрик с использованием LIMIT 1 для предотвращения ошибки #1242
+SET @competence_id = (SELECT term_id FROM wp_terms WHERE slug = 'competence' ORDER BY term_id DESC LIMIT 1);
+SET @management_id = (SELECT term_id FROM wp_terms WHERE slug = 'management' ORDER BY term_id DESC LIMIT 1);
+SET @autonomy_id = (SELECT term_id FROM wp_terms WHERE slug = 'autonomy' ORDER BY term_id DESC LIMIT 1);
+SET @job_stability_id = (SELECT term_id FROM wp_terms WHERE slug = 'job_stability' ORDER BY term_id DESC LIMIT 1);
+SET @residence_stability_id = (SELECT term_id FROM wp_terms WHERE slug = 'residence_stability' ORDER BY term_id DESC LIMIT 1);
+SET @service_id = (SELECT term_id FROM wp_terms WHERE slug = 'service' ORDER BY term_id DESC LIMIT 1);
+SET @challenge_id = (SELECT term_id FROM wp_terms WHERE slug = 'challenge' ORDER BY term_id DESC LIMIT 1);
+SET @lifestyle_id = (SELECT term_id FROM wp_terms WHERE slug = 'lifestyle' ORDER BY term_id DESC LIMIT 1);
+SET @entrepreneurship_id = (SELECT term_id FROM wp_terms WHERE slug = 'entrepreneurship' ORDER BY term_id DESC LIMIT 1);
+
+-- Добавление рубрик в таксономию
 INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
-VALUES
-    (@competence_id, 'co_rubric', '', 0, 0),
-    (@management_id, 'co_rubric', '', 0, 0),
-    (@autonomy_id, 'co_rubric', '', 0, 0),
-    (@job_stability_id, 'co_rubric', '', 0, 0),
-    (@residence_stability_id, 'co_rubric', '', 0, 0),
-    (@service_id, 'co_rubric', '', 0, 0),
-    (@challenge_id, 'co_rubric', '', 0, 0),
-    (@lifestyle_id, 'co_rubric', '', 0, 0),
-    (@entrepreneurship_id, 'co_rubric', '', 0, 0);
+SELECT @competence_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @competence_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @management_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @management_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @autonomy_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @autonomy_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @job_stability_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @job_stability_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @residence_stability_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @residence_stability_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @service_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @service_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @challenge_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @challenge_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @lifestyle_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @lifestyle_id AND taxonomy = 'co_rubric');
+INSERT INTO wp_term_taxonomy (term_id, taxonomy, description, parent, count)
+SELECT @entrepreneurship_id, 'co_rubric', '', 0, 0
+WHERE NOT EXISTS (SELECT 1 FROM wp_term_taxonomy WHERE term_id = @entrepreneurship_id AND taxonomy = 'co_rubric');
 
 -- Создание вопросов (co_question) и привязка к рубрикам
 INSERT INTO wp_posts (post_title, post_name, post_type, post_status, post_date, post_modified)
