@@ -43,7 +43,7 @@ function co_admin_styles() {
             width: 30%;
         }
         .co-unique-links-table .column-status {
-            width: 15%;
+            /* width: 15%; */
         }
         /* canvas {
             display: block !important;

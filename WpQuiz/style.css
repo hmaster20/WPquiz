@@ -355,4 +355,30 @@
         font-size: 0.85rem;
         padding: 6px 12px;
     }
+
+    /* Тестирование новой версии викторины */
+    .grade-circle, .grade-circle-phone {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: #0073aa;
+        border-radius: 50%;
+        transition: all 0.3s;
+    }
+    .grade-circle {
+        top: 0;
+    }
+    .grade-circle-phone {
+        left: 0;
+    }
+    .grade {
+        cursor: pointer;
+        padding: 10px;
+        border: 1px solid #ccc;
+        margin: 5px;
+    }
+    .grade.active {
+        background: #e0f7fa;
+        border-color: #0073aa;
+    }
 }
