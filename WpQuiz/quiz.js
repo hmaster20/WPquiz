@@ -11,7 +11,6 @@ class Quiz {
         this.thankYouContainer = jQuery('#co-quiz-thank-you');
         this.progressFill = jQuery('.progress-fill');
         this.progressLabel = jQuery('.progress-label');
-        this.userFormData = JSON.parse(localStorage.getItem("userFormData")) || {};
     }
 
     init() {
@@ -22,14 +21,12 @@ class Quiz {
         }
         console.log(`Quiz initialized: quiz_id=${this.quiz.quiz_id}, total_questions=${this.totalQuestions}`);
 
-        // Проверка сохраненных ответов
-        const savedAnswers = JSON.parse(localStorage.getItem("questionsHash_myNeedsKid")) || [];
-        if (savedAnswers.length > 0) {
-            this.currentQuestionIndex = savedAnswers.reduce((max, q) => q.weight !== 0 ? Math.max(max, q.id) : max, 0);
-            if (this.currentQuestionIndex >= this.totalQuestions) {
-                this.currentQuestionIndex = this.totalQuestions - 1;
-            }
-            this.answers = savedAnswers.reduce((acc, q) => ({ ...acc, [q.id]: q.weight }), {});
+        const savedAnswers = JSON.parse(localStorage.getItem("quizProgress")) || {};
+        if (Object.keys(savedAnswers).length > 0) {
+            this.answers = savedAnswers;
+            const maxId = Math.max(...Object.keys(savedAnswers).map(id => parseInt(id)));
+            const lastAnsweredIndex = this.quiz.questions.findIndex(q => q.id === maxId);
+            this.currentQuestionIndex = lastAnsweredIndex >= 0 && lastAnsweredIndex < this.totalQuestions - 1 ? lastAnsweredIndex + 1 : 0;
         }
 
         this.showQuestion(this.currentQuestionIndex);
@@ -52,16 +49,12 @@ class Quiz {
             return;
         }
 
-        console.log('Question answers:', question.answers); // Логирование для отладки
+        console.log('Question answers:', question.answers);
 
         const isText = question.type === 'text';
         const isMultiple = question.type === 'multiple_choice';
         const isSelect = question.type === 'select';
         const html = `
-            <div class="co-progress-bar">
-                <div class="progress-label"></div>
-                <div class="progress-container"><div class="progress-fill"></div></div>
-            </div>
             <div class="co-question active" data-question-id="${question.id}">
                 <h3>${question.title}${question.required ? '<span style="color:red;"> *</span>' : ''}</h3>
                 <div class="co-answer-options">
@@ -75,7 +68,7 @@ class Quiz {
                                 }
                                 return isSelect ? `
                                     <label class="grade ${this.answers[question.id] == answer.weight ? 'active' : ''}" id="grade-${answer.weight}">
-                                        <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                                        <input type="checkbox" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''} ${this.answers[question.id] == answer.weight ? 'checked' : ''}>
                                         ${answer.text}
                                     </label>
                                 ` : `
@@ -89,6 +82,10 @@ class Quiz {
                             }).join('') :
                             `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`
                     }
+                </div>
+                <div class="co-progress-bar">
+                    <div class="progress-label"></div>
+                    <div class="progress-container"><div class="progress-fill"></div></div>
                 </div>
                 <div class="co-quiz-navigation">
                     ${this.quiz.allow_back && index > 0 ? 
@@ -105,11 +102,10 @@ class Quiz {
         `;
         this.container.html(html);
 
-        // Перемещение круга прогресса для вопросов типа select
         if (isSelect && this.answers[question.id]) {
             const gradePercent = ((this.answers[question.id] * 10) - (10 - this.answers[question.id]));
-            jQuery('.grade-circle').css('left', gradePercent === 1 ? '0%' : `${gradePercent}%`);
-            jQuery('.grade-circle-phone').css('top', gradePercent === 1 ? '0%' : `${gradePercent}%`);
+            jQuery('.grade-circle').css('left', `${gradePercent}%`);
+            jQuery('.grade-circle-phone').css('top', `${gradePercent}%`);
         }
 
         this.updateProgressBar();
@@ -144,13 +140,9 @@ class Quiz {
         }
 
         if (answer !== undefined) {
-            this.answers[question.id] = isSelect && answer !== undefined ? question.answers[answer].weight : answer;
-            if (isSelect) {
-                localStorage.setItem("questionsHash_myNeedsKid", JSON.stringify(this.quiz.questions.map(q => ({
-                    id: q.id,
-                    title: q.title,
-                    weight: this.answers[q.id] || 0
-                }))));
+            this.answers[question.id] = isSelect ? question.answers[answer].weight : answer;
+            if (!isLast) {
+                localStorage.setItem("quizProgress", JSON.stringify(this.answers));
             }
         }
 
@@ -169,41 +161,21 @@ class Quiz {
                 token: window.location.search.match(/co_quiz_token=([^&]+)/) ? window.location.search.match(/co_quiz_token=([^&]+)/)[1] : ''
             },
             beforeSend: () => {
-                console.log(`Sending AJAX: action=co_quiz_submission, quiz_id=${this.quiz.quiz_id}, question_id=${question.id}, is_last=${isLast}`);
+                console.log(`Sending AJAX: action=co_quiz_submission, quiz_id=${this.quiz.quiz_id}, question_id=${question.id}, answers=`, answer, `is_last=${isLast}`);
             },
             success: (response) => {
                 console.log(`AJAX success: quiz_id=${this.quiz.quiz_id}, response=`, response);
                 if (response.success) {
-                    if (isLast && this.quiz.show_results) {
-                        if (response.data.results && response.data.results.trim() !== '') {
-                            this.resultsContainer.html(response.data.results).show();
-                        } else if (isSelect) {
-                            // Локальный расчет результатов для вопросов типа select
-                            const weights = this.calculateWeights();
-                            const resultsHtml = `
-                                <h3>${this.quiz.translations.your_results || 'Ваши результаты'}</h3>
-                                <ul>
-                                    <li>Компетенции: ${weights.competence}</li>
-                                    <li>Управление: ${weights.management}</li>
-                                    <li>Автономия: ${weights.autonomy}</li>
-                                    <li>Стабильность работы: ${weights.jobStability}</li>
-                                    <li>Стабильность проживания: ${weights.residenceStability}</li>
-                                    <li>Служение: ${weights.service}</li>
-                                    <li>Вызов: ${weights.challenge}</li>
-                                    <li>Образ жизни: ${weights.lifestyle}</li>
-                                    <li>Предпринимательство: ${weights.entrepreneurship}</li>
-                                </ul>
-                            `;
-                            this.resultsContainer.html(resultsHtml).show();
-                        }
+                    if (isLast && this.quiz.show_results && response.data.results && response.data.results.trim() !== '') {
+                        this.resultsContainer.html(response.data.results).show();
                         this.container.hide();
                         this.thankYouContainer.show();
-                        localStorage.setItem("test-end", "test-end");
+                        localStorage.removeItem("quizProgress");
                         console.log(`Results displayed: quiz_id=${this.quiz.quiz_id}, session_id=${this.quiz.session_id}`);
                     } else if (isLast) {
                         this.container.hide();
                         this.thankYouContainer.show();
-                        localStorage.setItem("test-end", "test-end");
+                        localStorage.removeItem("quizProgress");
                         console.log(`Quiz completed without results: quiz_id=${this.quiz.quiz_id}`);
                     } else if (next) {
                         this.currentQuestionIndex++;
@@ -225,41 +197,30 @@ class Quiz {
         return true;
     }
 
-    calculateWeights() {
-        const answ = this.answers;
-        return {
-            competence: Math.round((answ[1] + answ[9] + answ[17] + answ[25] + answ[33] || 0) / 5) || 0,
-            management: Math.round((answ[2] + answ[10] + answ[18] + answ[26] + answ[34] || 0) / 5) || 0,
-            autonomy: Math.round((answ[3] + answ[11] + answ[19] + answ[27] + answ[35] || 0) / 5) || 0,
-            jobStability: Math.round((answ[4] + answ[12] + answ[36] || 0) / 3) || 0,
-            residenceStability: Math.round((answ[20] + answ[28] + answ[41] || 0) / 3) || 0,
-            service: Math.round((answ[5] + answ[13] + answ[21] + answ[29] + answ[37] || 0) / 5) || 0,
-            challenge: Math.round((answ[6] + answ[14] + answ[22] + answ[30] + answ[38] || 0) / 5) || 0,
-            lifestyle: Math.round((answ[7] + answ[15] + answ[23] + answ[31] + answ[39] || 0) / 5) || 0,
-            entrepreneurship: Math.round((answ[8] + answ[16] + answ[24] + answ[32] + answ[40] || 0) / 5) || 0
-        };
-    }
-
     bindEvents() {
+        console.log('quiz.js: Binding events');
         jQuery(document).on('click', '.co-next-question', () => {
-            console.log(`Next button clicked: current_index=${this.currentQuestionIndex}`);
+            console.log(`quiz.js: Next button clicked: current_index=${this.currentQuestionIndex}, button_disabled=${jQuery('.co-next-question').prop('disabled')}`);
             this.saveAnswer(true);
         });
         jQuery(document).on('click', '.co-submit-quiz', () => {
-            console.log(`Submit button clicked: current_index=${this.currentQuestionIndex}`);
+            console.log(`quiz.js: Submit button clicked: current_index=${this.currentQuestionIndex}, button_disabled=${jQuery('.co-submit-quiz').prop('disabled')}`);
             this.saveAnswer(true);
         });
         jQuery(document).on('click', '.co-prev-question', () => {
-            console.log(`Previous button clicked: current_index=${this.currentQuestionIndex}`);
+            console.log(`quiz.js: Previous button clicked: current_index=${this.currentQuestionIndex}`);
             if (this.quiz.allow_back && this.currentQuestionIndex > 0) {
                 this.saveAnswer(false);
             }
         });
-        jQuery(document).on('click', '.grade', (event) => {
+        jQuery(document).on('click', '.grade input[type="checkbox"]', (event) => {
+            console.log('quiz.js: Grade checkbox clicked', jQuery(event.currentTarget).val());
             const $target = jQuery(event.currentTarget);
-            $target.closest('.co-answer-options').find('.grade.active').removeClass('active');
-            $target.addClass('active');
-            const grade = parseInt($target.attr('id').split('-')[1]);
+            const $parent = $target.closest('.co-answer-options');
+            $parent.find('.grade.active').removeClass('active');
+            $parent.find('input[type="checkbox"]').not($target).prop('checked', false);
+            $target.closest('.grade').addClass('active');
+            const grade = parseInt($target.closest('.grade').attr('id').split('-')[1]);
             const gradePercent = grade === 1 ? 0 : ((grade * 10) - (10 - grade));
             jQuery('.grade-circle').css('left', `${gradePercent}%`);
             jQuery('.grade-circle-phone').css('top', `${gradePercent}%`);
@@ -269,11 +230,13 @@ class Quiz {
 }
 
 jQuery(document).ready(function($) {
+    console.log('quiz.js: Document ready, checking coQuiz');
     if (typeof coQuiz === 'undefined') {
-        console.error('coQuiz is not defined');
+        console.error('quiz.js: coQuiz is not defined');
         $('.co-quiz-container').html(`<p>${coQuiz?.translations?.error_loading_quiz || 'Error loading quiz.'}</p>`);
         return;
     }
+    console.log('quiz.js: coQuiz loaded', coQuiz);
     const quiz = new Quiz(coQuiz);
     quiz.init();
 });

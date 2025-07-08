@@ -73,84 +73,110 @@ function co_quiz_settings_meta_box($post) {
 }
 
 function co_answers_meta_box($post) {
-    wp_nonce_field('co_save_question', 'co_nonce');
-    $answers = get_post_meta($post->ID, '_co_answers', true) ?: [];
-    $required = get_post_meta($post->ID, '_co_required', true) === 'yes';
-    $question_type = get_post_meta($post->ID, '_co_question_type', true) ?: 'select';
+    wp_nonce_field('co_save_answers', 'co_answers_nonce');
+    $question_type = get_post_meta($post->ID, '_co_question_type', true);
+    $answers = get_post_meta($post->ID, '_co_answers', true);
+    
+    // Проверка и преобразование answers в массив
+    if (!is_array($answers)) {
+        $answers = $answers ? unserialize($answers) : [];
+        if (!is_array($answers)) {
+            $answers = [];
+        }
+    }
+    
+    error_log('co_answers_meta_box: Loaded answers for post_id=' . $post->ID . ', answers=' . print_r($answers, true));
+
+    if ($question_type === 'select') {
+        // Автоматическая генерация шкалы 1–10
+        if (empty($answers)) {
+            $answers = array_map(function($i) {
+                return ['text' => (string)$i, 'weight' => $i];
+            }, range(1, 10));
+        }
+    }
     ?>
-    <div id="co-answers">
-        <p>
-            <label><?php _e('Question Type:', 'career-orientation'); ?></label>
-            <select name="co_question_type" id="co-question-type">
-                <option value="select" <?php selected($question_type, 'select'); ?>><?php _e('Select (Single Choice)', 'career-orientation'); ?></option>
-                <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?>><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                <option value="text" <?php selected($question_type, 'text'); ?>><?php _e('Text', 'career-orientation'); ?></option>
-            </select>
-        </p>
-        <p>
-            <label>
-                <input type="checkbox" name="co_required" value="yes" <?php checked($required); ?>>
-                <?php _e('Required question', 'career-orientation'); ?>
-            </label>
-        </p>
-        <div id="co-answers-container" class="<?php echo esc_attr($question_type); ?>">
-            <?php if ($question_type !== 'text') : ?>
-            <p><?php _e('Add up to 50 answers with their weights (integer values).', 'career-orientation'); ?></p>
-            <div id="co-answers-list">
-                <?php foreach ($answers as $index => $answer) : ?>
-                <div class="co-answer">
-                    <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
-                    <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
-                    <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
-                </div>
+    <div class="co-answers-metabox">
+        <?php if ($question_type === 'select'): ?>
+            <p>Шкала оценок (1–10) автоматически создана:</p>
+            <ul>
+                <?php foreach ($answers as $index => $answer): ?>
+                    <li>
+                        <input type="text" name="co_answers[<?php echo $index; ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" readonly>
+                        <input type="number" name="co_answers[<?php echo $index; ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" readonly>
+                    </li>
                 <?php endforeach; ?>
-            </div>
-            <button type="button" class="button" id="co-add-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
-            <?php else : ?>
-            <p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>
+            </ul>
+        <?php else: ?>
+            <p>Добавьте варианты ответа:</p>
+            <ul id="co-answers-list">
+                <?php foreach ($answers as $index => $answer): ?>
+                    <li>
+                        <input type="text" name="co_answers[<?php echo $index; ?>][text]" value="<?php echo esc_attr($answer['text']); ?>">
+                        <?php if ($question_type !== 'text'): ?>
+                            <input type="number" name="co_answers[<?php echo $index; ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>">
+                        <?php endif; ?>
+                        <button type="button" class="remove-answer">Удалить</button>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php if ($question_type !== 'select'): ?>
+                <button type="button" id="add-answer">Добавить ответ</button>
             <?php endif; ?>
-        </div>
+        <?php endif; ?>
     </div>
     <script>
         jQuery(document).ready(function($) {
-            let index = <?php echo count($answers); ?>;
-            function toggleAnswersContainer() {
-                let type = $('#co-question-type').val();
-                let container = $('#co-answers-container');
-                container.removeClass('select multiple_choice text').addClass(type);
-                if (type === 'text') {
-                    container.find('#co-answers-list, #co-add-answer').hide();
-                    if (!container.find('.text-notice').length) {
-                        container.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
-                    }
-                } else {
-                    container.find('.text-notice').remove();
-                    container.find('#co-answers-list, #co-add-answer').show();
-                }
-            }
-            $('#co-question-type').change(toggleAnswersContainer);
-            toggleAnswersContainer();
-            $('#co-add-answer').click(function() {
-                if (index >= 50) {
-                    alert('<?php _e('Maximum 50 answers allowed.', 'career-orientation'); ?>');
-                    return;
-                }
+            $('#add-answer').on('click', function() {
+                const index = $('#co-answers-list li').length;
                 $('#co-answers-list').append(`
-                    <div class="co-answer">
-                        <input type="text" name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
-                        <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
-                        <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
-                    </div>
+                    <li>
+                        <input type="text" name="co_answers[${index}][text]" value="">
+                        <?php if ($question_type !== 'text'): ?>
+                            <input type="number" name="co_answers[${index}][weight]" value="0">
+                        <?php endif; ?>
+                        <button type="button" class="remove-answer">Удалить</button>
+                    </li>
                 `);
-                index++;
             });
-            $(document).on('click', '.co-remove-answer', function() {
-                $(this).parent().remove();
-                index--;
+            $(document).on('click', '.remove-answer', function() {
+                $(this).closest('li').remove();
             });
         });
     </script>
     <?php
+}
+
+function co_save_answers($post_id) {
+    if (!isset($_POST['co_answers_nonce']) || !wp_verify_nonce($_POST['co_answers_nonce'], 'co_save_answers')) {
+        return;
+    }
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    $question_type = get_post_meta($post_id, '_co_question_type', true);
+    $answers = isset($_POST['co_answers']) && is_array($_POST['co_answers']) ? $_POST['co_answers'] : [];
+    
+    if ($question_type === 'select') {
+        // Генерация шкалы 1–10, если ответы не переданы
+        if (empty($answers)) {
+            $answers = array_map(function($i) {
+                return ['text' => (string)$i, 'weight' => $i];
+            }, range(1, 10));
+        }
+    } else {
+        // Очистка пустых ответов
+        $answers = array_filter($answers, function($answer) {
+            return !empty($answer['text']);
+        });
+    }
+
+    error_log('co_save_answers: Saving answers for post_id=' . $post_id . ', answers=' . print_r($answers, true));
+    update_post_meta($post_id, '_co_answers', $answers);
 }
 
 function co_quiz_questions_meta_box($post) {
