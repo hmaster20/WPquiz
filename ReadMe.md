@@ -26,6 +26,7 @@ WPquiz/
 ```
 
 Описание ключевых файлов:
+
 1. `career-orientation.php`:
    - Основной файл плагина, содержащий метаданные (название, версия, автор, лицензия).
    - Подключает все файлы из папки `includes/` для разделения логики.
@@ -90,7 +91,7 @@ WPquiz/
    - Производительность: Тяжелые SQL-запросы в `admin-pages.php` (например, в `co_analytics_page`) могут замедлять работу при большом объеме данных.
 
 3. Сравнение с аналогами:
-   - Согласно информации из веб-результатов, существуют другие плагины для квизов, такие как `WP Quiz` (https://plugins.svn.wordpress.org/wp-quiz/). Этот плагин предлагает схожие функции (викторины, поддержка медиа, социальные кнопки), но имеет дополнительные возможности, такие как анимации и многостраничные тесты. `WPquiz` может взять некоторые идеи оттуда, например, поддержку анимаций или интеграцию с соцсетями.[](https://github.com/WPPlugins/wp-quiz)
+   - Согласно информации из веб-результатов, существуют другие плагины для квизов, такие как `WP Quiz` (<https://plugins.svn.wordpress.org/wp-quiz/>). Этот плагин предлагает схожие функции (викторины, поддержка медиа, социальные кнопки), но имеет дополнительные возможности, такие как анимации и многостраничные тесты. `WPquiz` может взять некоторые идеи оттуда, например, поддержку анимаций или интеграцию с соцсетями.[](https://github.com/WPPlugins/wp-quiz)
 
 ## Возможности дальнейшего рефакторинга
 
@@ -99,6 +100,7 @@ WPquiz/
 1. Переход к объектно-ориентированному программированию (ООП):
    - Проблема: Текущий процедурный подход усложняет масштабирование и тестирование.
    - Решение: Переписать модули с использованием классов. Например:
+
      ```php
      class CO_Metaboxes {
          public function __construct() {
@@ -111,11 +113,13 @@ WPquiz/
      }
      new CO_Metaboxes();
      ```
+
    - Преимущества: Упрощает управление зависимостями, улучшает читаемость и тестируемость.
 
 2. Оптимизация производительности:
    - Кэширование:
      - Использовать `transient API` для кэширования результатов SQL-запросов в `co_analytics_page` и `co_reports_page`. Пример:
+
        ```php
        function co_analytics_page() {
            $cache_key = 'co_analytics_' . md5(serialize($_GET));
@@ -128,6 +132,7 @@ WPquiz/
            // Обработка результатов
        }
        ```
+
      - Кэшировать списки вопросов и тестов в `co_quiz_questions_meta_box`.
    - Ограничение запросов:
      - В `co_analytics_page` добавить пагинацию для таблиц и графиков, чтобы снизить нагрузку на сервер.
@@ -137,13 +142,16 @@ WPquiz/
 3. Вынос ресурсов в отдельные файлы:
    - Проблема: Встроенные стили и скрипты в `assets.php` затрудняют кэширование и поддержку.
    - Решение: Создать файлы `admin.css` и `admin.js` в папке `assets/`:
-     ```
+
+     ```shell
      WPquiz/
      ├── assets/
      │   ├── admin.css
      │   ├── admin.js
      ```
+
      - Подключать их через `wp_enqueue_style` и `wp_enqueue_script`:
+
        ```php
        function co_admin_assets() {
            wp_enqueue_style('co-admin-styles', plugin_dir_url(__FILE__) . '../assets/admin.css', [], '3.7');
@@ -162,6 +170,7 @@ WPquiz/
 4. Добавление тестов:
    - Юнит-тесты:
      - Использовать PHPUnit для тестирования ключевых функций, таких как `co_save_question` и `co_handle_quiz_submission`. Пример:
+
        ```php
        public function test_co_save_question() {
            $post_id = wp_insert_post(['post_type' => 'co_question', 'post_title' => 'Test Question']);
@@ -176,20 +185,24 @@ WPquiz/
            $this->assertCount(2, get_post_meta($post_id, '_co_answers', true));
        }
        ```
+
    - Интеграционные тесты:
      - Протестировать шорткоды и AJAX-запросы с помощью WP-CLI или плагина, такого как WP Integration Test Framework.
 
 5. Улучшение безопасности:
    - Дополнительная валидация:
      - В `co_handle_quiz_entry` проверить формат телефона с помощью регулярного выражения:
+
        ```php
        if (!preg_match('/^\+?[0-9\s\-]{7,15}$/', $phone)) {
            wp_send_json_error(['message' => __('Invalid phone number.', 'career-orientation')]);
            return;
        }
        ```
+
    - Ограничение доступа:
      - Централизовать проверку прав доступа с помощью функции:
+
        ```php
        function co_check_admin_access() {
            if (!current_user_can('manage_options')) {
@@ -197,18 +210,22 @@ WPquiz/
            }
        }
        ```
+
        - Использовать в `co_analytics_page`, `co_reports_page`, `co_unique_links_page`.
 
 6. Расширяемость:
    - Хуки:
      - Добавить фильтры и действия для кастомизации:
+
        ```php
        $output = apply_filters('co_quiz_results_output', $output, $quiz_id, $session_id);
        do_action('co_before_save_question', $post_id);
        ```
+
    - Модульная структура:
      - Создать папку `modules/` для дополнительных функций (например, интеграция с соцсетями или экспорт данных):
-       ```
+
+       ```shell
        WPquiz/
        ├── modules/
        │   ├── social-sharing.php
@@ -219,12 +236,15 @@ WPquiz/
    - Адаптивность:
      - Добавить медиазапросы в `style.css` и `admin.css` для поддержки мобильных устройств.
      - Использовать DataTables для таблиц в `co_unique_links_page` и `co_reports_page`:
+
        ```php
        wp_enqueue_script('datatables', 'https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js', ['jquery'], '1.13.1', true);
        wp_enqueue_style('datatables-css', 'https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css');
        ```
+
    - Drag-and-drop:
      - Добавить сортировку вопросов и ответов в `metaboxes.php` с помощью jQuery UI Sortable:
+
        ```javascript
        jQuery(document).ready(function($) {
            $('#co-answers-list').sortable({
@@ -241,6 +261,7 @@ WPquiz/
      - Указать зависимости (WordPress 6.7.2, PHP 8.2, MySQL 5.7).
    - Встроенная документация:
      - Добавить PHPDoc для всех функций:
+
        ```php
        /
         * Saves question meta data.
@@ -249,12 +270,14 @@ WPquiz/
         */
        function co_save_question($post_id) { ... }
        ```
+
    - Руководство в админ-панели:
      - Расширить `co_overview_page` с примерами и ссылкой на GitHub.
 
 9. Дополнительные функции:
    - Экспорт/импорт:
      - Добавить возможность экспорта вопросов и тестов в JSON/CSV:
+
        ```php
        function co_export_questions() {
            $questions = get_posts(['post_type' => 'co_question', 'posts_per_page' => -1]);
@@ -272,10 +295,12 @@ WPquiz/
        }
        add_action('wp_ajax_co_export_questions', 'co_export_questions');
        ```
+
    - Интеграция с соцсетями:
      - Добавить кнопки шаринга результатов, вдохновляясь `WP Quiz`.[](https://github.com/WPPlugins/wp-quiz)
    - Уведомления:
      - Отправлять email-уведомления при завершении теста:
+
        ```php
        function co_send_completion_email($quiz_id, $user_id) {
            $user = get_userdata($user_id);
