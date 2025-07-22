@@ -17,6 +17,11 @@ function co_dashboard_page() {
     $unique_users = $wpdb->get_var("SELECT COUNT(DISTINCT user_id) FROM $table_name WHERE user_id != 0");
     $unique_links_used = $wpdb->get_var("SELECT COUNT(*) FROM $link_table WHERE is_used = 1");
 
+    // Приведение типов для безопасности
+    $total_quizzes = !is_null($total_quizzes) ? intval($total_quizzes) : 0;
+    $unique_users = !is_null($unique_users) ? intval($unique_users) : 0;
+    $unique_links_used = !is_null($unique_links_used) ? intval($unique_links_used) : 0;
+
     ?>
     <div class="wrap">
         <h1><?php _e('Career Orientation Dashboard', 'career-orientation'); ?></h1>
@@ -24,7 +29,7 @@ function co_dashboard_page() {
         <div class="co-dashboard-stats">
             <div class="co-stat-card">
                 <h3><?php _e('Total Quizzes Completed', 'career-orientation'); ?></h3>
-                <p><?php echo esc_html($total_quizzes ?: 0); ?></p>
+                <p><?php echo esc_html($total_quizzes); ?></p> <!-- Исправленная строка 224 -->
             </div>
             <div class="co-stat-card">
                 <h3><?php _e('Last Activity', 'career-orientation'); ?></h3>
@@ -32,11 +37,11 @@ function co_dashboard_page() {
             </div>
             <div class="co-stat-card">
                 <h3><?php _e('Unique Users', 'career-orientation'); ?></h3>
-                <p><?php echo esc_html($unique_users ?: 0); ?></p>
+                <p><?php echo esc_html($unique_users); ?></p>
             </div>
             <div class="co-stat-card">
                 <h3><?php _e('Unique Links Used', 'career-orientation'); ?></h3>
-                <p><?php echo esc_html($unique_links_used ?: 0); ?></p>
+                <p><?php echo esc_html($unique_links_used); ?></p>
             </div>
         </div>
         <style>
@@ -68,7 +73,7 @@ function co_dashboard_page() {
 }
 
 function co_overview_page() {
-    if (!current_user_can('manage_options')) {
+    if (!current_user_that('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
     }
     ?>
@@ -91,6 +96,7 @@ function co_overview_page() {
             <li><strong><?php _e('Rubrics', 'career-orientation'); ?></strong>: <?php _e('Назначайте рубрики вопросам в разделе "Rubrics" для классификации.', 'career-orientation'); ?></li>
             <li><strong><?php _e('Analytics', 'career-orientation'); ?></strong>: <?php _e('Просматривайте статистику ответов в разделе "Analytics" с фильтрами по категориям, рубрикам и датам.', 'career-orientation'); ?></li>
             <li><strong><?php _e('Reports', 'career-orientation'); ?></strong>: <?php _e('Анализируйте результаты пользователей в разделе "Reports" с фильтрами по пользователям, опросам и датам.', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Import/Export', 'career-orientation'); ?></strong>: <?php _e('Импортируйте и экспортируйте вопросы в формате CSV в разделе "Import/Export".', 'career-orientation'); ?></li>
             <li><strong><?php _e('Dashboard', 'career-orientation'); ?></strong>: <?php _e('Просматривайте общую статистику в разделе "Dashboard".', 'career-orientation'); ?></li>
         </ul>
         <h3><?php _e('Как использовать шорткод', 'career-orientation'); ?></h3>
@@ -101,6 +107,7 @@ function co_overview_page() {
         <ul>
             <li><a href="<?php echo admin_url('admin.php?page=co-dashboard'); ?>"><?php _e('Dashboard', 'career-orientation'); ?></a></li>
             <li><a href="<?php echo admin_url('edit.php?post_type=co_question'); ?>"><?php _e('Questions', 'career-orientation'); ?></a></li>
+            <li><a href="<?php echo admin_url('admin.php?page=co-import-export'); ?>"><?php _e('Import/Export', 'career-orientation'); ?></a></li>
             <li><a href="<?php echo admin_url('edit.php?post_type=co_quiz'); ?>"><?php _e('Quizzes', 'career-orientation'); ?></a></li>
             <li><a href="<?php echo admin_url('edit-tags.php?taxonomy=co_category&post_type=co_quiz'); ?>"><?php _e('Categories', 'career-orientation'); ?></a></li>
             <li><a href="<?php echo admin_url('edit-tags.php?taxonomy=co_rubric&post_type=co_question'); ?>"><?php _e('Rubrics', 'career-orientation'); ?></a></li>
@@ -110,6 +117,140 @@ function co_overview_page() {
     </div>
     <?php
 }
+
+function co_import_export_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
+    }
+    $message = '';
+    if (isset($_POST['co_import_questions']) && isset($_FILES['co_questions_csv'])) {
+        if (!isset($_POST['co_import_nonce']) || !wp_verify_nonce($_POST['co_import_nonce'], 'co_import_questions')) {
+            $message = '<div class="error"><p>' . __('Invalid nonce.', 'career-orientation') . '</p></div>';
+        } else {
+            $file = $_FILES['co_questions_csv'];
+            if ($file['type'] === 'text/csv' && $file['size'] > 0) {
+                $result = co_import_questions_from_csv($file['tmp_name']);
+                if ($result['success']) {
+                    $message = '<div class="updated"><p>' . sprintf(__('Imported %d questions successfully.', 'career-orientation'), $result['imported']) . '</p></div>';
+                } else {
+                    $message = '<div class="error"><p>' . esc_html($result['error']) . '</p></div>';
+                }
+            } else {
+                $message = '<div class="error"><p>' . __('Invalid file format or empty file.', 'career-orientation') . '</p></div>';
+            }
+        }
+    }
+    // Формирование URL для экспорта с логированием
+    $export_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_questions'), 'co_export_questions_nonce');
+    error_log('Export URL generated: ' . $export_url);
+    ?>
+    <div class="wrap">
+        <h1><?php _e('Import/Export Questions', 'career-orientation'); ?></h1>
+        <p><?php _e('Export questions to CSV or import questions from a CSV file.', 'career-orientation'); ?></p>
+        <h2><?php _e('Export Questions', 'career-orientation'); ?></h2>
+        <p>
+            <a href="<?php echo esc_url($export_url); ?>" class="button"><?php _e('Export Questions to CSV', 'career-orientation'); ?></a>
+        </p>
+        <p>Debug URL: <?php echo esc_html($export_url); ?></p>
+        <h2><?php _e('Import Questions', 'career-orientation'); ?></h2>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('co_import_questions', 'co_import_nonce'); ?>
+            <p>
+                <label><?php _e('Select CSV File:', 'career-orientation'); ?></label>
+                <input type="file" name="co_questions_csv" accept=".csv" required>
+            </p>
+            <p>
+                <input type="submit" name="co_import_questions" class="button button-primary" value="<?php _e('Import Questions', 'career-orientation'); ?>">
+            </p>
+        </form>
+        <?php echo $message; ?>
+        <h3><?php _e('CSV Format', 'career-orientation'); ?></h3>
+        <p><?php _e('The CSV file must have the following columns:', 'career-orientation'); ?></p>
+        <ul>
+            <li><strong>title</strong>: <?php _e('Question title (required)', 'career-orientation'); ?></li>
+            <li><strong>type</strong>: <?php _e('Question type (select, multiple_choice, text)', 'career-orientation'); ?></li>
+            <li><strong>required</strong>: <?php _e('Is question required? (yes/no)', 'career-orientation'); ?></li>
+            <li><strong>rubric</strong>: <?php _e('Rubric slug (optional, comma-separated for multiple)', 'career-orientation'); ?></li>
+            <li><strong>answers</strong>: <?php _e('Answers in format "text:weight" separated by "|", e.g., "Option 1:5|Option 2:3" (optional for text type)', 'career-orientation'); ?></li>
+        </ul>
+        <p><?php _e('Example CSV:', 'career-orientation'); ?></p>
+        <pre>
+title,type,required,rubric,answers
+"What is your favorite activity?",select,yes,career-interests,"Reading:5|Sports:3|Coding:7"
+"Describe your skills",text,no,skills,
+"Which skills do you have?",multiple_choice,yes,skills,"Communication:2|Leadership:4|Analysis:3"
+        </pre>
+    </div>
+    <?php
+}
+
+function co_export_questions_to_csv() {
+    // Логирование полного GET-запроса для диагностики
+    error_log('co_export_questions_to_csv called. GET: ' . print_r($_GET, true));
+
+    // Проверка параметров запроса
+    $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
+    if ($action !== 'co_export_questions') {
+        return; // Выходим, если действие не соответствует
+    }
+
+    $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+    if (empty($nonce) || !wp_verify_nonce($nonce, 'co_export_questions_nonce')) {
+        error_log('Export questions failed: Invalid or missing nonce. Nonce: ' . ($nonce ?: 'not set'));
+        wp_die(__('Invalid request: Security check failed.', 'career-orientation'));
+    }
+
+    if (!current_user_can('manage_options')) {
+        error_log('Export questions failed: User lacks manage_options capability.');
+        wp_die(__('You do not have sufficient permissions to perform this action.', 'career-orientation'));
+    }
+
+    $questions = get_posts([
+        'post_type' => 'co_question',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+    ]);
+
+    // Установка заголовков для CSV
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="co_questions_export_' . date('Y-m-d_H-i-s') . '.csv"');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers']);
+
+    foreach ($questions as $question) {
+        $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'select';
+        $required = get_post_meta($question->ID, '_co_required', true) === 'yes' ? 'yes' : 'no';
+        $rubrics = wp_get_post_terms($question->ID, 'co_rubric', ['fields' => 'slugs']);
+        $rubric_slugs = !is_wp_error($rubrics) ? implode(',', $rubrics) : '';
+        $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
+        $answers_str = '';
+        if ($question_type !== 'text' && is_array($answers)) {
+            $answers_array = [];
+            foreach ($answers as $answer) {
+                if (!empty($answer['text'])) {
+                    $answers_array[] = $answer['text'] . ':' . $answer['weight'];
+                }
+            }
+            $answers_str = implode('|', $answers_array);
+        }
+
+        fputcsv($output, [
+            $question->post_title,
+            $question_type,
+            $required,
+            $rubric_slugs,
+            $answers_str,
+        ]);
+    }
+
+    fclose($output);
+    exit;
+}
+add_action('admin_post_co_export_questions', 'co_export_questions_to_csv');
 
 function co_unique_links_page() {
     if (!current_user_can('manage_options')) {
@@ -518,38 +659,38 @@ function co_reports_page() {
                         $link = $wpdb->get_row($wpdb->prepare("SELECT email FROM $link_table WHERE quiz_id = %d AND session_id = %s", $quiz_id, $session_id));
                         ?>
                         <h3><?php _e('Session', 'career-orientation'); ?>: <?php echo esc_html($session_id); ?> (<?php echo $user ? esc_html($user->display_name) : ($link ? esc_html($link->email) : __('Anonymous', 'career-orientation')); ?>, <?php echo esc_html(date_i18n('d.m.Y H:i', strtotime($result->quiz_date))); ?>)</h3>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th><?php _e('User', 'career-orientation'); ?></th>
-                    <th><?php _e('Quiz', 'career-orientation'); ?></th>
-                    <th><?php _e('Question', 'career-orientation'); ?></th>
-                    <th><?php _e('Answer', 'career-orientation'); ?></th>
-                    <th><?php _e('Weight', 'career-orientation'); ?></th>
-                    <th><?php _e('Date', 'career-orientation'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+                        <table class="wp-list-table widefat fixed striped">
+                            <thead>
+                                <tr>
+                                    <th><?php _e('User', 'career-orientation'); ?></th>
+                                    <th><?php _e('Quiz', 'career-orientation'); ?></th>
+                                    <th><?php _e('Question', 'career-orientation'); ?></th>
+                                    <th><?php _e('Answer', 'career-orientation'); ?></th>
+                                    <th><?php _e('Weight', 'career-orientation'); ?></th>
+                                    <th><?php _e('Date', 'career-orientation'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
                                 <?php 
                                 $detailed_results = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE quiz_id = %d AND session_id = %s", $quiz_id, $session_id));
                                 foreach ($detailed_results as $result) : 
-                    $question = get_post($result->question_id);
+                                    $question = get_post($result->question_id);
                                     if (!$question) continue;
-                    $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
+                                    $question_type = get_post_meta($result->question_id, '_co_question_type', true) ?: 'select';
                                     $answer = $question_type === 'text' ? esc_html($result->answer_text) : (isset(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]) ? esc_html(get_post_meta($result->question_id, '_co_answers', true)[$result->answer_id]['text']) : '');
-                    if (!$answer) continue;
-                    ?>
-                    <tr>
-                        <td><?php echo $user ? esc_html($user->display_name) : __('Anonymous', 'career-orientation'); ?></td>
-                        <td><?php echo esc_html($quiz->post_title); ?></td>
-                        <td><?php echo esc_html($question->post_title); ?></td>
-                        <td><?php echo esc_html($answer); ?></td>
-                        <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
-                        <td><?php echo esc_html($result->quiz_date); ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                                    if (!$answer) continue;
+                                    ?>
+                                    <tr>
+                                        <td><?php echo $user ? esc_html($user->display_name) : __('Anonymous', 'career-orientation'); ?></td>
+                                        <td><?php echo esc_html($quiz->post_title); ?></td>
+                                        <td><?php echo esc_html($question->post_title); ?></td>
+                                        <td><?php echo esc_html($answer); ?></td>
+                                        <td><?php echo $question_type === 'text' ? '-' : esc_html($result->answer_weight); ?></td>
+                                        <td><?php echo esc_html($result->quiz_date); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     <?php endforeach; ?>
                 </div>
             <?php endforeach; ?>
@@ -578,5 +719,97 @@ function co_reports_page() {
         }
     </style>
     <?php
+}
+
+function co_import_questions_from_csv($file_path) {
+    global $wpdb;
+    $result = ['success' => false, 'imported' => 0, 'error' => ''];
+
+    if (!file_exists($file_path)) {
+        return ['success' => false, 'error' => __('File not found.', 'career-orientation')];
+    }
+
+    $file = fopen($file_path, 'r');
+    if (!$file) {
+        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation')];
+    }
+
+    $header = fgetcsv($file);
+    if (!$header || !in_array('title', $header)) {
+        fclose($file);
+        return ['success' => false, 'error' => __('Invalid CSV format.', 'career-orientation')];
+    }
+
+    $imported = 0;
+    while (($row = fgetcsv($file)) !== false) {
+        $data = array_combine($header, array_map('trim', $row));
+        if (empty($data['title'])) {
+            continue;
+        }
+
+        $question_type = in_array($data['type'], ['select', 'multiple_choice', 'text']) ? $data['type'] : 'select';
+        $required = strtolower($data['required']) === 'yes' ? 'yes' : 'no';
+        $rubrics = !empty($data['rubric']) ? array_map('trim', explode(',', $data['rubric'])) : [];
+        $answers = [];
+
+        if ($question_type !== 'text' && !empty($data['answers'])) {
+            $answer_pairs = explode('|', $data['answers']);
+            foreach ($answer_pairs as $pair) {
+                if (empty($pair)) {
+                    continue;
+                }
+                $parts = explode(':', $pair);
+                if (count($parts) !== 2 || empty(trim($parts[0]))) {
+                    continue;
+                }
+                $answers[] = [
+                    'text' => sanitize_text_field(trim($parts[0])),
+                    'weight' => intval(trim($parts[1])),
+                ];
+            }
+        }
+
+        if (count($answers) > 50 && $question_type !== 'text') {
+            continue;
+        }
+
+        $question_id = wp_insert_post([
+            'post_title' => sanitize_text_field($data['title']),
+            'post_type' => 'co_question',
+            'post_status' => 'publish',
+        ]);
+
+        if (is_wp_error($question_id)) {
+            continue;
+        }
+
+        update_post_meta($question_id, '_co_question_type', $question_type);
+        if ($required === 'yes') {
+            update_post_meta($question_id, '_co_required', 'yes');
+        }
+        if ($question_type !== 'text' && !empty($answers)) {
+            update_post_meta($question_id, '_co_answers', $answers);
+        }
+        if (!empty($rubrics)) {
+            $valid_rubrics = [];
+            foreach ($rubrics as $rubric) {
+                $term = term_exists($rubric, 'co_rubric');
+                if (!$term) {
+                    $term = wp_insert_term($rubric, 'co_rubric');
+                }
+                if (!is_wp_error($term)) {
+                    $valid_rubrics[] = is_array($term) ? $term['term_id'] : $term;
+                }
+            }
+            if (!empty($valid_rubrics)) {
+                wp_set_post_terms($question_id, $valid_rubrics, 'co_rubric');
+            }
+        }
+
+        $imported++;
+    }
+
+    fclose($file);
+    return ['success' => true, 'imported' => $imported];
 }
 ?>

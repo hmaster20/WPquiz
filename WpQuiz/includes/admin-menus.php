@@ -38,6 +38,14 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-dashboard',
+        __('Import/Export Questions', 'career-orientation'),
+        __('Import/Export', 'career-orientation'),
+        'manage_options',
+        'co-import-export',
+        'co_import_export_page'
+    );
+    add_submenu_page(
+        'co-dashboard',
         __('Quizzes', 'career-orientation'),
         __('Quizzes', 'career-orientation'),
         'manage_options',
@@ -89,6 +97,10 @@ function co_fix_taxonomy_menu($parent_file) {
     if (isset($_GET['taxonomy']) && in_array($_GET['taxonomy'], ['co_category', 'co_rubric']) && isset($_GET['post_type'])) {
         $parent_file = 'co-dashboard';
         $submenu_file = 'edit-tags.php?taxonomy=' . $_GET['taxonomy'] . '&post_type=' . $_GET['post_type'];
+    }
+    if (isset($_GET['page']) && $_GET['page'] === 'co-import-export') {
+        $parent_file = 'co-dashboard';
+        $submenu_file = 'co-import-export';
     }
     return $parent_file;
 }
