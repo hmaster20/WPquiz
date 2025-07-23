@@ -191,25 +191,25 @@ function co_export_questions_to_csv() {
     // Проверка параметров запроса
     $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
     if ($action !== 'co_export_questions') {
-        return; // Выходим, если действие не соответствует
+        error_log('Export questions skipped: Invalid action. Action: ' . $action);
+        return;
     }
 
     $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
     if (empty($nonce) || !wp_verify_nonce($nonce, 'co_export_questions_nonce')) {
         error_log('Export questions failed: Invalid or missing nonce. Nonce: ' . ($nonce ?: 'not set'));
-        wp_die(__('Invalid request: Security check failed.', 'career-orientation'));
+        wp_die(__('Invalid request: Security check failed.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 403]);
     }
 
     if (!current_user_can('manage_options')) {
         error_log('Export questions failed: User lacks manage_options capability.');
-        wp_die(__('You do not have sufficient permissions to perform this action.', 'career-orientation'));
+        wp_die(__('You do not have sufficient permissions to perform this action.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 403]);
     }
 
-    $questions = get_posts([
-        'post_type' => 'co_question',
-        'posts_per_page' => -1,
-        'post_status' => 'publish',
-    ]);
+    // Отключение буферизации вывода
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
 
     // Установка заголовков для CSV
     header('Content-Type: text/csv; charset=utf-8');
@@ -217,34 +217,56 @@ function co_export_questions_to_csv() {
     header('Cache-Control: no-cache, no-store, must-revalidate');
     header('Pragma: no-cache');
     header('Expires: 0');
+    header('X-Content-Type-Options: nosniff');
 
+    // Открытие потока для вывода
     $output = fopen('php://output', 'w');
+    if ($output === false) {
+        error_log('Export questions failed: Unable to open php://output.');
+        wp_die(__('Failed to initialize export.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
+    }
+
+    // Заголовки CSV
     fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers']);
 
-    foreach ($questions as $question) {
-        $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'select';
-        $required = get_post_meta($question->ID, '_co_required', true) === 'yes' ? 'yes' : 'no';
-        $rubrics = wp_get_post_terms($question->ID, 'co_rubric', ['fields' => 'slugs']);
-        $rubric_slugs = !is_wp_error($rubrics) ? implode(',', $rubrics) : '';
-        $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
-        $answers_str = '';
-        if ($question_type !== 'text' && is_array($answers)) {
-            $answers_array = [];
-            foreach ($answers as $answer) {
-                if (!empty($answer['text'])) {
-                    $answers_array[] = $answer['text'] . ':' . $answer['weight'];
-                }
-            }
-            $answers_str = implode('|', $answers_array);
-        }
+    // Получение вопросов
+    $questions = get_posts([
+        'post_type' => 'co_question',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+    ]);
 
-        fputcsv($output, [
-            $question->post_title,
-            $question_type,
-            $required,
-            $rubric_slugs,
-            $answers_str,
-        ]);
+    if (empty($questions)) {
+        error_log('Export questions: No questions found.');
+        fputcsv($output, ['No questions found']);
+    } else {
+        foreach ($questions as $question) {
+            $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'select';
+            $required = get_post_meta($question->ID, '_co_required', true) === 'yes' ? 'yes' : 'no';
+            $rubrics = wp_get_post_terms($question->ID, 'co_rubric', ['fields' => 'slugs']);
+            $rubric_slugs = !is_wp_error($rubrics) ? implode(',', $rubrics) : '';
+            $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
+            $answers_str = '';
+            if ($question_type !== 'text' && is_array($answers)) {
+                $answers_array = [];
+                foreach ($answers as $answer) {
+                    if (!empty($answer['text'])) {
+                        $answers_array[] = $answer['text'] . ':' . $answer['weight'];
+                    }
+                }
+                $answers_str = implode('|', $answers_array);
+            }
+
+            if (!fputcsv($output, [
+                $question->post_title,
+                $question_type,
+                $required,
+                $rubric_slugs,
+                $answers_str,
+            ])) {
+                error_log('Export questions failed: Error writing to CSV for question ID ' . $question->ID);
+            }
+        }
     }
 
     fclose($output);
