@@ -73,7 +73,7 @@ function co_dashboard_page() {
 }
 
 function co_overview_page() {
-    if (!current_user_that('manage_options')) {
+    if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
     }
     ?>
@@ -185,8 +185,8 @@ title,type,required,rubric,answers
 }
 
 function co_export_questions_to_csv() {
-    // Логирование полного GET-запроса для диагностики
-    error_log('co_export_questions_to_csv called. GET: ' . print_r($_GET, true));
+    // Логирование начала выполнения
+    error_log('co_export_questions_to_csv started. GET: ' . print_r($_GET, true));
 
     // Проверка параметров запроса
     $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
@@ -206,8 +206,8 @@ function co_export_questions_to_csv() {
         wp_die(__('You do not have sufficient permissions to perform this action.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 403]);
     }
 
-    // Отключение буферизации вывода
-    if (ob_get_level()) {
+    // Отключение буферизации вывода и очистка любых существующих буферов
+    while (ob_get_level()) {
         ob_end_clean();
     }
 
@@ -227,7 +227,11 @@ function co_export_questions_to_csv() {
     }
 
     // Заголовки CSV
-    fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers']);
+    if (!fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers'])) {
+        error_log('Export questions failed: Error writing CSV headers.');
+        fclose($output);
+        wp_die(__('Failed to write CSV headers.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
+    }
 
     // Получение вопросов
     $questions = get_posts([
@@ -235,6 +239,7 @@ function co_export_questions_to_csv() {
         'posts_per_page' => -1,
         'post_status' => 'publish',
     ]);
+    error_log('Export questions: Found ' . count($questions) . ' questions.');
 
     if (empty($questions)) {
         error_log('Export questions: No questions found.');
@@ -244,7 +249,12 @@ function co_export_questions_to_csv() {
             $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'select';
             $required = get_post_meta($question->ID, '_co_required', true) === 'yes' ? 'yes' : 'no';
             $rubrics = wp_get_post_terms($question->ID, 'co_rubric', ['fields' => 'slugs']);
-            $rubric_slugs = !is_wp_error($rubrics) ? implode(',', $rubrics) : '';
+            if (is_wp_error($rubrics)) {
+                error_log('Export questions: Error fetching rubrics for question ID ' . $question->ID . ': ' . $rubrics->get_error_message());
+                $rubric_slugs = '';
+            } else {
+                $rubric_slugs = implode(',', $rubrics);
+            }
             $answers = get_post_meta($question->ID, '_co_answers', true) ?: [];
             $answers_str = '';
             if ($question_type !== 'text' && is_array($answers)) {
@@ -269,7 +279,9 @@ function co_export_questions_to_csv() {
         }
     }
 
+    // Закрытие потока и завершение
     fclose($output);
+    error_log('Export questions completed successfully.');
     exit;
 }
 add_action('admin_post_co_export_questions', 'co_export_questions_to_csv');
