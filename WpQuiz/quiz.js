@@ -58,7 +58,7 @@ class Quiz {
                     return `
                         <label class="co-numeric-answer">
                             <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
-                            ${answer.text}
+                            <span>${answer.text}</span>
                         </label>
                     `;
                 }).join('') + `</div>` :
@@ -74,7 +74,7 @@ class Quiz {
                     return `
                         <label class="co-single-choice-answer${isNumeric ? ' co-numeric-answer' : ''}">
                             <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''}>
-                            ${answer.text}
+                            <span>${answer.text}</span>
                         </label>
                     `;
                 }).join('') + `</div>` :
@@ -89,7 +89,7 @@ class Quiz {
                     return `
                         <label class="co-multiple-choice-answer">
                             <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
-                            ${answer.text}
+                            <span>${answer.text}</span>
                         </label>
                     `;
                 }).join('') :
@@ -119,6 +119,7 @@ class Quiz {
         this.progressContainer = jQuery('.progress-container');
         this.progressFill = jQuery('.progress-fill');
         this.updateProgressBar();
+        console.log(`Answer container classes: ${jQuery('.co-single-choice-answers').attr('class') || 'none'}`);
     }
 
     saveAnswer(next) {
@@ -166,7 +167,7 @@ class Quiz {
                 token: window.location.search.match(/co_quiz_token=([^&]+)/) ? window.location.search.match(/co_quiz_token=([^&]+)/)[1] : ''
             },
             beforeSend: () => {
-                console.log(`Sending AJAX: action=co_quiz_submission, quiz_id=${this.quiz.quiz_id}, question_id=${question.id}, is_last=${isLast}`);
+                console.log(`Sending AJAX: action=co_quiz_submission, quiz_id=${this.quiz.quiz_id}, question_id=${question.id}, is_last=${isLast}, answers=`, answer);
             },
             success: (response) => {
                 console.log(`AJAX success: quiz_id=${this.quiz.quiz_id}, response=`, response);
@@ -189,7 +190,7 @@ class Quiz {
                     }
                 } else {
                     console.error(`AJAX error: quiz_id=${this.quiz.quiz_id}, message=`, response.data?.message);
-                    alert(response.data.message || this.quiz.translations.error_saving);
+                    alert(response.data.message || this.quiz.translations.error_saving || 'Error saving answer.');
                 }
             },
             error: (xhr, status, error) => {

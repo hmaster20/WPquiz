@@ -51,6 +51,7 @@ function co_quiz_questions_meta_box($post) {
         'posts_per_page' => -1,
     ]);
     $new_questions = get_post_meta($post->ID, '_co_new_questions', true) ?: [];
+    error_log('Rendering co_quiz_questions_meta_box for post_id=' . $post->ID);
     ?>
     <div id="co-quiz-questions">
         <h4><?php _e('Select Existing Questions', 'career-orientation'); ?></h4>
@@ -391,6 +392,7 @@ function co_save_question($post_id) {
             ];
         }
         update_post_meta($post_id, '_co_answers', $answers);
+        error_log('Saving question: post_id=' . $post_id . ', numeric_count=' . $numeric_count);
     } else {
         delete_post_meta($post_id, '_co_numeric_answers');
         delete_post_meta($post_id, '_co_numeric_count');

@@ -68,6 +68,11 @@ function co_admin_styles() {
         .co-single-choice-answer input {
             margin-right: 5px;
         }
+        .co-single-choice-answer input:checked + span,
+        .co-multiple-choice-answer input:checked + span {
+            font-weight: bold;
+            color: #0073aa;
+        }
         .co-multiple-choice-answer {
             flex: 0 0 auto;
             padding: 5px 10px;
@@ -121,6 +126,16 @@ function co_admin_styles() {
             display: inline-block;
             margin: 0 10px;
             font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            .co-single-choice-answers, .co-numeric-answers, .co-multiple-choice-answer {
+                gap: 3px;
+            }
+            .co-numeric-answer, .co-single-choice-answer, .co-multiple-choice-answer {
+                min-width: 30px;
+                padding: 3px 5px;
+                font-size: 14px;
+            }
         }
     </style>
     <?php

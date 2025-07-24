@@ -20,10 +20,10 @@ function co_handle_quiz_submission() {
     if ($token) {
         global $wpdb;
         $table_name = $wpdb->prefix . 'co_unique_links';
-        $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s AND is_used = 1", $token));
+        $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s", $token));
         if (!$link) {
-            wp_send_json_error(['message' => __('Invalid or unused quiz token.', 'career-orientation')]);
-            error_log('Quiz submission failed: Invalid or unused token: ' . $token);
+            wp_send_json_error(['message' => __('Invalid quiz token.', 'career-orientation')]);
+            error_log('Quiz submission failed: Invalid token: ' . $token);
             return;
         }
     }
@@ -34,9 +34,9 @@ function co_handle_quiz_submission() {
         error_log('Quiz submission failed: Invalid quiz_id=' . $quiz_id . ' or question_id=' . $question_id);
         return;
     }
-    $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'select';
+    $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'single_choice';
     global $wpdb;
-    $table_name = $wpdb->prefix . 'co_results';
+    $table_name = $wpdb->prefix . 'co_quiz_submissions';
     $user_id = get_current_user_id();
 
     if ($question_type === 'text') {
@@ -45,7 +45,7 @@ function co_handle_quiz_submission() {
             'user_id' => $user_id,
             'quiz_id' => $quiz_id,
             'question_id' => $question_id,
-            'answer_id' => 0,
+            'answer_id' => null,
             'answer_weight' => 0,
             'answer_text' => $answer_text,
             'quiz_date' => current_time('mysql'),
@@ -71,7 +71,7 @@ function co_handle_quiz_submission() {
                 'session_id' => $session_id
             ]);
             error_log('Answer saved: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', answer_id=' . $answer_id . ', weight=' . $stored_answers[$answer_id]['weight'] . ', session_id=' . $session_id);
-            if ($question_type === 'select') {
+            if ($question_type === 'single_choice') {
                 break;
             }
         }
@@ -128,6 +128,7 @@ add_action('wp_ajax_nopriv_co_quiz_submission', 'co_handle_quiz_submission');
 function co_handle_quiz_entry() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_entry_nonce')) {
         wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
+        error_log('Quiz entry failed: Invalid nonce');
         return;
     }
     $token = sanitize_text_field($_POST['token']);
@@ -136,10 +137,12 @@ function co_handle_quiz_entry() {
     $email = sanitize_email($_POST['email']);
     if (!$full_name || !$phone || !$email) {
         wp_send_json_error(['message' => __('Please fill in all fields.', 'career-orientation')]);
+        error_log('Quiz entry failed: Missing required fields');
         return;
     }
     if (!is_email($email)) {
         wp_send_json_error(['message' => __('Invalid email address.', 'career-orientation')]);
+        error_log('Quiz entry failed: Invalid email address: ' . $email);
         return;
     }
     global $wpdb;
@@ -147,10 +150,12 @@ function co_handle_quiz_entry() {
     $link = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE token = %s", $token));
     if (!$link) {
         wp_send_json_error(['message' => __('Invalid quiz token.', 'career-orientation')]);
+        error_log('Quiz entry failed: Invalid quiz token: ' . $token);
         return;
     }
     if ($link->is_used) {
         wp_send_json_error(['message' => __('This quiz link has already been used.', 'career-orientation')]);
+        error_log('Quiz entry failed: Token already used: ' . $token);
         return;
     }
     $result = $wpdb->update($table_name, [
@@ -162,8 +167,10 @@ function co_handle_quiz_entry() {
     ], ['token' => $token]);
     if ($result === false) {
         wp_send_json_error(['message' => __('Database error.', 'career-orientation')]);
+        error_log('Quiz entry failed: Database error for token: ' . $token);
         return;
     }
+    error_log('Quiz entry successful: token=' . $token . ', full_name=' . $full_name . ', email=' . $email);
     wp_send_json_success();
 }
 add_action('wp_ajax_co_quiz_entry', 'co_handle_quiz_entry');
@@ -172,12 +179,14 @@ add_action('wp_ajax_nopriv_co_quiz_entry', 'co_handle_quiz_entry');
 function co_generate_unique_link() {
     if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_generate_link_nonce')) {
         wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
+        error_log('Generate unique link failed: Invalid nonce');
         return;
     }
     global $wpdb;
     $quiz_id = intval($_POST['quiz_id']);
     if (!$quiz_id || !get_post($quiz_id) || get_post($quiz_id)->post_type !== 'co_quiz') {
         wp_send_json_error(['message' => __('Invalid quiz ID', 'career-orientation')]);
+        error_log('Generate unique link failed: Invalid quiz ID: ' . $quiz_id);
         return;
     }
     $token = wp_generate_uuid4();
@@ -190,9 +199,11 @@ function co_generate_unique_link() {
     ]);
     if ($result === false) {
         wp_send_json_error(['message' => __('Database error', 'career-orientation')]);
+        error_log('Generate unique link failed: Database error for quiz_id=' . $quiz_id);
         return;
     }
-    wp_send_json_success();
+    error_log('Unique link generated: quiz_id=' . $quiz_id . ', token=' . $token);
+    wp_send_json_success(['token' => $token]);
 }
 add_action('wp_ajax_co_generate_unique_link', 'co_generate_unique_link');
 ?>
