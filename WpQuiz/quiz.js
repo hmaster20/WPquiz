@@ -10,7 +10,6 @@ class Quiz {
         this.resultsContainer = jQuery('#co-quiz-results');
         this.thankYouContainer = jQuery('#co-quiz-thank-you');
         this.progressFill = jQuery('.progress-fill');
-        this.progressLabel = jQuery('.progress-label');
     }
 
     init() {
@@ -27,7 +26,6 @@ class Quiz {
     updateProgressBar() {
         const progress = ((this.currentQuestionIndex + 1) / this.totalQuestions) * 100;
         this.progressFill.css('width', `${progress}%`);
-        this.progressLabel.text(`${this.currentQuestionIndex + 1} / ${this.totalQuestions}`);
         console.log(`Progress bar updated: index=${this.currentQuestionIndex}, progress=${progress.toFixed(2)}%`);
     }
 
@@ -41,13 +39,14 @@ class Quiz {
         }
     
         const isText = question.type === 'text';
-        const isSelect = question.type === 'select';
+        const isMultipleChoice = question.type === 'multiple_choice';
+        const isSingleChoice = question.type === 'single_choice';
         const isNumeric = question.numeric_answers === 'yes';
         let answersHtml = '';
     
         if (isText) {
             answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
-        } else if (isSelect && isNumeric) {
+        } else if (isMultipleChoice && isNumeric) {
             answersHtml = question.answers && Array.isArray(question.answers) ?
                 `<div class="co-numeric-answers">` +
                 question.answers.map((answer, ansIndex) => {
@@ -63,6 +62,22 @@ class Quiz {
                     `;
                 }).join('') + `</div>` :
                 `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`;
+        } else if (isSingleChoice && isNumeric) {
+            answersHtml = question.answers && Array.isArray(question.answers) ?
+                `<div class="co-numeric-answers">` +
+                question.answers.map((answer, ansIndex) => {
+                    if (!answer.text) {
+                        console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
+                        return '';
+                    }
+                    return `
+                        <label class="co-numeric-answer">
+                            <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                            ${answer.text}
+                        </label>
+                    `;
+                }).join('') + `</div>` :
+                `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`;
         } else {
             answersHtml = question.answers && Array.isArray(question.answers) ?
                 question.answers.map((answer, ansIndex) => {
@@ -72,9 +87,9 @@ class Quiz {
                     }
                     return `
                         <label>
-                            <input type="${isSelect ? 'checkbox' : 'radio'}" 
-                                   name="co_answer_${question.id}${isSelect ? '[]' : ''}" 
-                                   value="${ansIndex}" ${question.required && !isSelect ? 'required' : ''}>
+                            <input type="${isMultipleChoice ? 'checkbox' : 'radio'}" 
+                                   name="co_answer_${question.id}${isMultipleChoice ? '[]' : ''}" 
+                                   value="${ansIndex}" ${question.required ? 'required' : ''}>
                             ${answer.text}
                         </label>
                     `;
@@ -85,7 +100,6 @@ class Quiz {
         const html = `
             <div class="co-progress-bar">
                 <div class="progress-container"><div class="progress-fill"></div></div>
-                <div class="progress-label">${this.currentQuestionIndex + 1} / ${this.totalQuestions}</div>
             </div>
             <div class="co-question active" data-question-id="${question.id}">
                 <h3>${question.title}${question.required ? '<span style="color:red;"> *</span>' : ''}</h3>
@@ -112,7 +126,7 @@ class Quiz {
         let answer;
         const isLast = next && this.currentQuestionIndex === this.totalQuestions - 1;
 
-        if (question.type === 'select') {
+        if (question.type === 'multiple_choice') {
             answer = jQuery(`input[name="co_answer_${question.id}[]"]:checked`).map(function() { return jQuery(this).val(); }).get();
         } else if (question.type === 'text') {
             answer = jQuery(`textarea[name="co_answer_${question.id}"]`).val().trim();

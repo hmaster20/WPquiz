@@ -75,7 +75,7 @@ function co_admin_styles() {
         .co-progress-bar {
             margin-bottom: 20px;
         }
-        .co-progress-container {
+        .progress-container {
             width: 100%;
             height: 10px;
             background-color: #f0f0f0;
@@ -85,12 +85,8 @@ function co_admin_styles() {
         .progress-fill {
             height: 100%;
             background-color: #0073aa;
+            width: 0;
             transition: width 0.3s ease-in-out;
-        }
-        .progress-label {
-            text-align: center;
-            margin-top: 5px;
-            font-weight: bold;
         }
         .co-progress-counter {
             display: inline-block;
