@@ -94,13 +94,25 @@ add_action('admin_menu', 'co_admin_menu');
 
 function co_fix_taxonomy_menu($parent_file) {
     global $submenu_file;
+    // Обработка таксономий
     if (isset($_GET['taxonomy']) && in_array($_GET['taxonomy'], ['co_category', 'co_rubric']) && isset($_GET['post_type'])) {
         $parent_file = 'co-dashboard';
         $submenu_file = 'edit-tags.php?taxonomy=' . $_GET['taxonomy'] . '&post_type=' . $_GET['post_type'];
     }
+    // Обработка страницы импорта/экспорта
     if (isset($_GET['page']) && $_GET['page'] === 'co-import-export') {
         $parent_file = 'co-dashboard';
         $submenu_file = 'co-import-export';
+    }
+    // Обработка страницы редактирования викторины (edit.php?post_type=co_quiz)
+    if (isset($_GET['post_type']) && $_GET['post_type'] === 'co_quiz') {
+        $parent_file = 'co-dashboard';
+        $submenu_file = 'edit.php?post_type=co_question';
+    }
+    // Обработка страницы создания вопроса (post-new.php?post_type=co_question)
+    if (isset($_GET['post_type']) && $_GET['post_type'] === 'co_question' && strpos($_SERVER['REQUEST_URI'], 'post-new.php') !== false) {
+        $parent_file = 'co-dashboard';
+        $submenu_file = 'edit.php?post_type=co_question';
     }
     return $parent_file;
 }

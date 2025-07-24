@@ -14,6 +14,7 @@ add_action('wp_enqueue_scripts', 'co_enqueue_assets');
 function co_admin_enqueue_assets($hook) {
     wp_enqueue_script('jquery'); // Явное подключение jQuery
     wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . '../style.css', [], '3.7');
+    // Подключение Chart.js только для дашборда, аналитики и отчетов
     if (in_array($hook, ['toplevel_page_co-dashboard', 'career-orientation_page_co-analytics', 'career-orientation_page_co-reports'])) {
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
     }
@@ -84,10 +85,27 @@ function co_admin_scripts() {
     ?>
     <script>
         jQuery(document).ready(function($) {
-            if ($('#toplevel_page_co-dashboard').hasClass('wp-menu-open') === false && ['edit-tags.php', 'admin.php'].includes(window.location.pathname.split('/').pop())) {
+            // Установка активного пункта меню для таксономий, страниц и создания вопросов
+            if ($('#toplevel_page_co-dashboard').hasClass('wp-menu-open') === false && ['edit-tags.php', 'admin.php', 'edit.php', 'post-new.php'].includes(window.location.pathname.split('/').pop())) {
                 $('#toplevel_page_co-dashboard').addClass('wp-menu-open wp-has-current-submenu');
-                $('#toplevel_page_co-dashboard a.wp-has-current-submenu').addClass('current');
+                // Установка активного пункта на Questions для edit.php?post_type=co_quiz или post-new.php?post_type=co_question
+                if (window.location.search.includes('post_type=co_quiz') || (window.location.search.includes('post_type=co_question') && window.location.pathname.includes('post-new.php'))) {
+                    $('#toplevel_page_co-dashboard a[href="edit.php?post_type=co_question"]').addClass('current');
+                    $('#toplevel_page_co-dashboard .wp-submenu a').removeClass('current');
+                } else {
+                    $('#toplevel_page_co-dashboard a.wp-has-current-submenu').addClass('current');
+                }
             }
+
+            // Обработчик для кнопки Add New Question в мета-боксе
+            $(document).on('click', '#co-add-new-question', function() {
+                console.log('Add New Question clicked');
+                $('#toplevel_page_co-dashboard').addClass('wp-menu-open wp-has-current-submenu');
+                $('#toplevel_page_co-dashboard .wp-submenu a').removeClass('current');
+                $('#toplevel_page_co-dashboard a[href="edit.php?post_type=co_question"]').addClass('current');
+            });
+
+            // Обработчик генерации уникальной ссылки
             $('.co-generate-link').click(function() {
                 var quiz_id = $('#co-quiz-select').val();
                 if (!quiz_id) {
