@@ -39,9 +39,50 @@ class Quiz {
             this.container.html(`<p>${this.quiz.translations?.error_question_not_found || 'Error: Question not found.'}</p>`);
             return;
         }
-
+    
         const isText = question.type === 'text';
         const isMultiple = question.type === 'multiple_choice';
+        const isNumeric = question.numeric_answers === 'yes'; // Предполагается, что backend передает флаг numeric_answers
+        let answersHtml = '';
+    
+        if (isText) {
+            answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
+        } else if (isMultiple && isNumeric) {
+            // Компактное отображение числовых ответов
+            answersHtml = question.answers && Array.isArray(question.answers) ?
+                `<div class="co-numeric-answers">` +
+                question.answers.map((answer, ansIndex) => {
+                    if (!answer.text) {
+                        console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
+                        return '';
+                    }
+                    return `
+                        <label class="co-numeric-answer">
+                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                            ${answer.text}
+                        </label>
+                    `;
+                }).join('') + `</div>` :
+                `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`;
+        } else {
+            answersHtml = question.answers && Array.isArray(question.answers) ?
+                question.answers.map((answer, ansIndex) => {
+                    if (!answer.text) {
+                        console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
+                        return '';
+                    }
+                    return `
+                        <label>
+                            <input type="${isMultiple ? 'checkbox' : 'radio'}" 
+                                   name="co_answer_${question.id}${isMultiple ? '[]' : ''}" 
+                                   value="${ansIndex}" ${question.required && !isMultiple ? 'required' : ''}>
+                            ${answer.text}
+                        </label>
+                    `;
+                }).join('') :
+                `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`;
+        }
+    
         const html = `
             <div class="co-progress-bar">
                 <div class="progress-label"></div>
@@ -50,25 +91,7 @@ class Quiz {
             <div class="co-question active" data-question-id="${question.id}">
                 <h3>${question.title}${question.required ? '<span style="color:red;"> *</span>' : ''}</h3>
                 <div class="co-answer-options">
-                    ${isText ? 
-                        `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>` :
-                        question.answers && Array.isArray(question.answers) ?
-                            question.answers.map((answer, ansIndex) => {
-                                if (!answer.text) {
-                                    console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
-                                    return '';
-                                }
-                                return `
-                                    <label>
-                                        <input type="${isMultiple ? 'checkbox' : 'radio'}" 
-                                               name="co_answer_${question.id}${isMultiple ? '[]' : ''}" 
-                                               value="${ansIndex}" ${question.required && !isMultiple ? 'required' : ''}>
-                                        ${answer.text}
-                                    </label>
-                                `;
-                            }).join('') :
-                            `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`
-                    }
+                    ${answersHtml}
                 </div>
                 <div class="co-quiz-navigation">
                     ${this.quiz.allow_back && index > 0 ? 

@@ -77,6 +77,8 @@ function co_answers_meta_box($post) {
     $answers = get_post_meta($post->ID, '_co_answers', true) ?: [];
     $required = get_post_meta($post->ID, '_co_required', true) === 'yes';
     $question_type = get_post_meta($post->ID, '_co_question_type', true) ?: 'select';
+    $numeric_answers = get_post_meta($post->ID, '_co_numeric_answers', true) === 'yes';
+    $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 10; // По умолчанию 10 ответов
     ?>
     <div id="co-answers">
         <p>
@@ -94,20 +96,37 @@ function co_answers_meta_box($post) {
             </label>
         </p>
         <div id="co-answers-container" class="<?php echo esc_attr($question_type); ?>">
-            <?php if ($question_type !== 'text') : ?>
-            <p><?php _e('Add up to 50 answers with their weights (integer values).', 'career-orientation'); ?></p>
-            <div id="co-answers-list">
-                <?php foreach ($answers as $index => $answer) : ?>
-                <div class="co-answer">
-                    <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
-                    <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
-                    <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+            <?php if ($question_type === 'multiple_choice') : ?>
+                <p>
+                    <label>
+                        <input type="checkbox" name="co_numeric_answers" id="co-numeric-answers" value="yes" <?php checked($numeric_answers); ?>>
+                        <?php _e('Use numeric answers (1 to 100)', 'career-orientation'); ?>
+                    </label>
+                </p>
+                <div id="co-numeric-answers-settings" style="<?php echo $numeric_answers ? '' : 'display:none;'; ?>">
+                    <p>
+                        <label><?php _e('Number of answers:', 'career-orientation'); ?></label>
+                        <input type="range" name="co_numeric_count" id="co-numeric-count-slider" min="1" max="100" step="1" value="<?php echo esc_attr($numeric_count); ?>">
+                        <input type="number" name="co_numeric_count_input" id="co-numeric-count-input" min="1" max="100" step="1" value="<?php echo esc_attr($numeric_count); ?>">
+                        <button type="button" class="button co-numeric-decrement">-</button>
+                        <button type="button" class="button co-numeric-increment">+</button>
+                    </p>
                 </div>
-                <?php endforeach; ?>
-            </div>
-            <button type="button" class="button" id="co-add-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
-            <?php else : ?>
-            <p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>
+            <?php endif; ?>
+            <?php if ($question_type !== 'text' && !$numeric_answers) : ?>
+                <p><?php _e('Add up to 50 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                <div id="co-answers-list">
+                    <?php foreach ($answers as $index => $answer) : ?>
+                        <div class="co-answer">
+                            <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                            <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                            <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="button" id="co-add-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
+            <?php elseif ($question_type === 'text') : ?>
+                <p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>
             <?php endif; ?>
         </div>
     </div>
@@ -119,17 +138,55 @@ function co_answers_meta_box($post) {
                 let container = $('#co-answers-container');
                 container.removeClass('select multiple_choice text').addClass(type);
                 if (type === 'text') {
-                    container.find('#co-answers-list, #co-add-answer').hide();
+                    container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings').hide();
                     if (!container.find('.text-notice').length) {
                         container.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
                     }
-                } else {
+                } else if (type === 'multiple_choice' && $('#co-numeric-answers').is(':checked')) {
+                    container.find('#co-answers-list, #co-add-answer').hide();
+                    container.find('#co-numeric-answers-settings').show();
                     container.find('.text-notice').remove();
+                } else {
+                    container.find('#co-numeric-answers-settings, .text-notice').hide();
                     container.find('#co-answers-list, #co-add-answer').show();
                 }
             }
             $('#co-question-type').change(toggleAnswersContainer);
-            toggleAnswersContainer();
+            $('#co-numeric-answers').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#co-numeric-answers-settings').show();
+                    $('#co-answers-list, #co-add-answer').hide();
+                } else {
+                    $('#co-numeric-answers-settings').hide();
+                    $('#co-answers-list, #co-add-answer').show();
+                }
+            });
+            $('#co-numeric-count-slider').on('input', function() {
+                $('#co-numeric-count-input').val($(this).val());
+            });
+            $('#co-numeric-count-input').on('input', function() {
+                let val = parseInt($(this).val());
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > 100) val = 100;
+                $(this).val(val);
+                $('#co-numeric-count-slider').val(val);
+            });
+            $('.co-numeric-increment').click(function() {
+                let input = $('#co-numeric-count-input');
+                let val = parseInt(input.val()) || 1;
+                if (val < 100) {
+                    input.val(val + 1);
+                    $('#co-numeric-count-slider').val(val + 1);
+                }
+            });
+            $('.co-numeric-decrement').click(function() {
+                let input = $('#co-numeric-count-input');
+                let val = parseInt(input.val()) || 1;
+                if (val > 1) {
+                    input.val(val - 1);
+                    $('#co-numeric-count-slider').val(val - 1);
+                }
+            });
             $('#co-add-answer').click(function() {
                 if (index >= 50) {
                     alert('<?php _e('Maximum 50 answers allowed.', 'career-orientation'); ?>');
@@ -148,6 +205,7 @@ function co_answers_meta_box($post) {
                 $(this).parent().remove();
                 index--;
             });
+            toggleAnswersContainer();
         });
     </script>
     <?php
@@ -308,20 +366,36 @@ function co_save_question($post_id) {
     } else {
         delete_post_meta($post_id, '_co_required');
     }
-    if (isset($_POST['co_answers']) && is_array($_POST['co_answers']) && $_POST['co_question_type'] !== 'text') {
+    if (isset($_POST['co_numeric_answers']) && $_POST['co_question_type'] === 'multiple_choice') {
+        update_post_meta($post_id, '_co_numeric_answers', 'yes');
+        $numeric_count = isset($_POST['co_numeric_count']) ? min(max(intval($_POST['co_numeric_count']), 1), 100) : 10;
+        update_post_meta($post_id, '_co_numeric_count', $numeric_count);
         $answers = [];
-        foreach ($_POST['co_answers'] as $index => $answer) {
-            if (!isset($answer['text'], $answer['weight']) || empty(trim($answer['text']))) {
-                continue;
-            }
-            $answers[$index] = [
-                'text' => sanitize_text_field($answer['text']),
-                'weight' => intval($answer['weight']),
+        for ($i = 1; $i <= $numeric_count; $i++) {
+            $answers[] = [
+                'text' => strval($i),
+                'weight' => $i,
             ];
         }
         update_post_meta($post_id, '_co_answers', $answers);
     } else {
-        delete_post_meta($post_id, '_co_answers');
+        delete_post_meta($post_id, '_co_numeric_answers');
+        delete_post_meta($post_id, '_co_numeric_count');
+        if (isset($_POST['co_answers']) && is_array($_POST['co_answers']) && $_POST['co_question_type'] !== 'text') {
+            $answers = [];
+            foreach ($_POST['co_answers'] as $index => $answer) {
+                if (!isset($answer['text'], $answer['weight']) || empty(trim($answer['text']))) {
+                    continue;
+                }
+                $answers[$index] = [
+                    'text' => sanitize_text_field($answer['text']),
+                    'weight' => intval($answer['weight']),
+                ];
+            }
+            update_post_meta($post_id, '_co_answers', $answers);
+        } else {
+            delete_post_meta($post_id, '_co_answers');
+        }
     }
 }
 add_action('save_post_co_question', 'co_save_question');

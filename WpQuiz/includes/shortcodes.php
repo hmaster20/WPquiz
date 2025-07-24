@@ -34,6 +34,7 @@ function co_quiz_shortcode($atts) {
                 'title' => $question->post_title,
                 'type' => get_post_meta($qid, '_co_question_type', true) ?: 'select',
                 'required' => get_post_meta($qid, '_co_required', true) === 'yes',
+                'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes', // Добавлено поле numeric_answers
                 'answers' => get_post_meta($qid, '_co_answers', true) ?: []
             ];
         }, $question_ids),

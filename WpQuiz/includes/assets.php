@@ -35,6 +35,24 @@ function co_admin_styles() {
             flex: 0 0 auto;
             margin: 0;
         }
+        .co-numeric-answers {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 5px;
+            overflow-x: auto;
+            padding: 5px;
+        }
+        .co-numeric-answer {
+            flex: 0 0 auto;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 40px;
+        }
+        .co-numeric-answer input {
+            margin-right: 5px;
+        }
         .co-unique-links-table th, .co-unique-links-table td {
             padding: 10px;
             vertical-align: middle;
@@ -45,12 +63,6 @@ function co_admin_styles() {
         .co-unique-links-table .column-status {
             width: 15%;
         }
-        /* canvas {
-            display: block !important;
-            width: 100% !important;
-            max-width: 400px;
-            height: 200px;
-        } */
     </style>
     <?php
 }
