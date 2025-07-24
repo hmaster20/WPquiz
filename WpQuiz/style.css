@@ -369,4 +369,17 @@
         border-radius: 6px;
         margin-right: 10px;
     }
+
+    #wpwrap #co-numeric-answers-wrapper,
+    #wpwrap #co-numeric-answers-settings {
+        margin-top: 10px;
+    }
+    #wpwrap #co-numeric-answers-settings input[type="range"],
+    #wpwrap #co-numeric-answers-settings input[type="number"] {
+        width: 100px;
+        margin-right: 10px;
+    }
+    #wpwrap #co-numeric-answers-settings .button {
+        margin: 5px;
+    }
 }

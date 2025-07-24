@@ -12,8 +12,8 @@ function co_enqueue_assets() {
 add_action('wp_enqueue_scripts', 'co_enqueue_assets');
 
 function co_admin_enqueue_assets($hook) {
+    wp_enqueue_script('jquery'); // Явное подключение jQuery
     wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . '../style.css', [], '3.7');
-    // Подключение Chart.js только для дашборда, аналитики и отчетов
     if (in_array($hook, ['toplevel_page_co-dashboard', 'career-orientation_page_co-analytics', 'career-orientation_page_co-reports'])) {
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
     }
@@ -62,6 +62,18 @@ function co_admin_styles() {
         }
         .co-unique-links-table .column-status {
             width: 15%;
+        }
+        #co-numeric-answers-wrapper,
+        #co-numeric-answers-settings {
+            margin-top: 10px;
+        }
+        #co-numeric-answers-settings input[type="range"],
+        #co-numeric-answers-settings input[type="number"] {
+            width: 100px;
+            margin-right: 10px;
+        }
+        #co-numeric-answers-settings .button {
+            margin: 5px;
         }
     </style>
     <?php

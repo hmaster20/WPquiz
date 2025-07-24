@@ -78,7 +78,7 @@ function co_answers_meta_box($post) {
     $required = get_post_meta($post->ID, '_co_required', true) === 'yes';
     $question_type = get_post_meta($post->ID, '_co_question_type', true) ?: 'select';
     $numeric_answers = get_post_meta($post->ID, '_co_numeric_answers', true) === 'yes';
-    $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 10; // По умолчанию 10 ответов
+    $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 10;
     ?>
     <div id="co-answers">
         <p>
@@ -96,7 +96,7 @@ function co_answers_meta_box($post) {
             </label>
         </p>
         <div id="co-answers-container" class="<?php echo esc_attr($question_type); ?>">
-            <?php if ($question_type === 'multiple_choice') : ?>
+            <div id="co-numeric-answers-wrapper" style="<?php echo $question_type === 'multiple_choice' ? '' : 'display:none;'; ?>">
                 <p>
                     <label>
                         <input type="checkbox" name="co_numeric_answers" id="co-numeric-answers" value="yes" <?php checked($numeric_answers); ?>>
@@ -112,7 +112,7 @@ function co_answers_meta_box($post) {
                         <button type="button" class="button co-numeric-increment">+</button>
                     </p>
                 </div>
-            <?php endif; ?>
+            </div>
             <?php if ($question_type !== 'text' && !$numeric_answers) : ?>
                 <p><?php _e('Add up to 50 answers with their weights (integer values).', 'career-orientation'); ?></p>
                 <div id="co-answers-list">
@@ -132,34 +132,48 @@ function co_answers_meta_box($post) {
     </div>
     <script>
         jQuery(document).ready(function($) {
+            console.log('co_answers_meta_box script loaded');
+            if (!$('#co-question-type').length) {
+                console.error('co-question-type element not found');
+                return;
+            }
             let index = <?php echo count($answers); ?>;
             function toggleAnswersContainer() {
                 let type = $('#co-question-type').val();
                 let container = $('#co-answers-container');
+                let numericWrapper = $('#co-numeric-answers-wrapper');
+                console.log('toggleAnswersContainer: type=' + type + ', numeric_answers_checked=' + ($('#co-numeric-answers').is(':checked') ? 'true' : 'false'));
                 container.removeClass('select multiple_choice text').addClass(type);
                 if (type === 'text') {
                     container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings').hide();
+                    numericWrapper.hide();
                     if (!container.find('.text-notice').length) {
                         container.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
                     }
-                } else if (type === 'multiple_choice' && $('#co-numeric-answers').is(':checked')) {
-                    container.find('#co-answers-list, #co-add-answer').hide();
-                    container.find('#co-numeric-answers-settings').show();
-                    container.find('.text-notice').remove();
+                } else if (type === 'multiple_choice') {
+                    numericWrapper.show();
+                    if ($('#co-numeric-answers').is(':checked')) {
+                        container.find('#co-answers-list, #co-add-answer').hide();
+                        container.find('#co-numeric-answers-settings').show();
+                        container.find('.text-notice').remove();
+                    } else {
+                        container.find('#co-numeric-answers-settings').hide();
+                        container.find('#co-answers-list, #co-add-answer').show();
+                        container.find('.text-notice').remove();
+                    }
                 } else {
+                    numericWrapper.hide();
                     container.find('#co-numeric-answers-settings, .text-notice').hide();
                     container.find('#co-answers-list, #co-add-answer').show();
                 }
             }
-            $('#co-question-type').change(toggleAnswersContainer);
-            $('#co-numeric-answers').change(function() {
-                if ($(this).is(':checked')) {
-                    $('#co-numeric-answers-settings').show();
-                    $('#co-answers-list, #co-add-answer').hide();
-                } else {
-                    $('#co-numeric-answers-settings').hide();
-                    $('#co-answers-list, #co-add-answer').show();
-                }
+            $('#co-question-type').on('change', function() {
+                console.log('Question type changed to: ' + $(this).val());
+                toggleAnswersContainer();
+            });
+            $('#co-numeric-answers').on('change', function() {
+                console.log('Numeric answers checkbox changed: checked=' + $(this).is(':checked'));
+                toggleAnswersContainer();
             });
             $('#co-numeric-count-slider').on('input', function() {
                 $('#co-numeric-count-input').val($(this).val());
@@ -171,7 +185,7 @@ function co_answers_meta_box($post) {
                 $(this).val(val);
                 $('#co-numeric-count-slider').val(val);
             });
-            $('.co-numeric-increment').click(function() {
+            $('.co-numeric-increment').on('click', function() {
                 let input = $('#co-numeric-count-input');
                 let val = parseInt(input.val()) || 1;
                 if (val < 100) {
@@ -179,7 +193,7 @@ function co_answers_meta_box($post) {
                     $('#co-numeric-count-slider').val(val + 1);
                 }
             });
-            $('.co-numeric-decrement').click(function() {
+            $('.co-numeric-decrement').on('click', function() {
                 let input = $('#co-numeric-count-input');
                 let val = parseInt(input.val()) || 1;
                 if (val > 1) {
@@ -187,7 +201,7 @@ function co_answers_meta_box($post) {
                     $('#co-numeric-count-slider').val(val - 1);
                 }
             });
-            $('#co-add-answer').click(function() {
+            $('#co-add-answer').on('click', function() {
                 if (index >= 50) {
                     alert('<?php _e('Maximum 50 answers allowed.', 'career-orientation'); ?>');
                     return;
@@ -206,6 +220,7 @@ function co_answers_meta_box($post) {
                 index--;
             });
             toggleAnswersContainer();
+            console.log('Initial toggleAnswersContainer called');
         });
     </script>
     <?php
@@ -272,10 +287,12 @@ function co_quiz_questions_meta_box($post) {
     </div>
     <script>
         jQuery(document).ready(function($) {
+            console.log('co_quiz_questions_meta_box script loaded');
             let questionIndex = <?php echo count($new_questions); ?>;
             function toggleNewAnswersContainer($container) {
                 let type = $container.find('.co-new-question-type').val();
                 let answersContainer = $container.find('.co-new-answers');
+                console.log('toggleNewAnswersContainer: type=' + type);
                 answersContainer.removeClass('select multiple_choice text').addClass(type);
                 if (type === 'text') {
                     answersContainer.find('.co-new-answers-list, .co-add-new-answer').hide();
@@ -287,7 +304,7 @@ function co_quiz_questions_meta_box($post) {
                     answersContainer.find('.co-new-answers-list, .co-add-new-answer').show();
                 }
             }
-            $('#co-add-new-question').click(function() {
+            $('#co-add-new-question').on('click', function() {
                 let newIndex = questionIndex++;
                 $('#co-new-questions-list').append(`
                     <div class="co-new-question">
