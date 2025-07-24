@@ -32,9 +32,9 @@ function co_quiz_shortcode($atts) {
             return [
                 'id' => $qid,
                 'title' => $question->post_title,
-                'type' => get_post_meta($qid, '_co_question_type', true) ?: 'select',
+                'type' => get_post_meta($qid, '_co_question_type', true) ?: 'multiple_choice',
                 'required' => get_post_meta($qid, '_co_required', true) === 'yes',
-                'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes', // Добавлено поле numeric_answers
+                'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes',
                 'answers' => get_post_meta($qid, '_co_answers', true) ?: []
             ];
         }, $question_ids),
@@ -97,6 +97,7 @@ function co_quiz_entry_shortcode($atts) {
         'translations' => [
             'please_fill_all_fields' => __('Please fill in all fields.', 'career-orientation'),
             'invalid_email' => __('Invalid email address.', 'career-orientation'),
+            'invalid_phone' => __('Invalid phone number.', 'career-orientation'),
             'error_submitting' => __('Error submitting data. Please try again.', 'career-orientation'),
         ],
     ]);

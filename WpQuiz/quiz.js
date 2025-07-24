@@ -41,14 +41,13 @@ class Quiz {
         }
     
         const isText = question.type === 'text';
-        const isMultiple = question.type === 'multiple_choice';
-        const isNumeric = question.numeric_answers === 'yes'; // Предполагается, что backend передает флаг numeric_answers
+        const isSelect = question.type === 'select';
+        const isNumeric = question.numeric_answers === 'yes';
         let answersHtml = '';
     
         if (isText) {
             answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
-        } else if (isMultiple && isNumeric) {
-            // Компактное отображение числовых ответов
+        } else if (isSelect && isNumeric) {
             answersHtml = question.answers && Array.isArray(question.answers) ?
                 `<div class="co-numeric-answers">` +
                 question.answers.map((answer, ansIndex) => {
@@ -73,9 +72,9 @@ class Quiz {
                     }
                     return `
                         <label>
-                            <input type="${isMultiple ? 'checkbox' : 'radio'}" 
-                                   name="co_answer_${question.id}${isMultiple ? '[]' : ''}" 
-                                   value="${ansIndex}" ${question.required && !isMultiple ? 'required' : ''}>
+                            <input type="${isSelect ? 'checkbox' : 'radio'}" 
+                                   name="co_answer_${question.id}${isSelect ? '[]' : ''}" 
+                                   value="${ansIndex}" ${question.required && !isSelect ? 'required' : ''}>
                             ${answer.text}
                         </label>
                     `;
@@ -85,8 +84,8 @@ class Quiz {
     
         const html = `
             <div class="co-progress-bar">
-                <div class="progress-label"></div>
                 <div class="progress-container"><div class="progress-fill"></div></div>
+                <div class="progress-label">${this.currentQuestionIndex + 1} / ${this.totalQuestions}</div>
             </div>
             <div class="co-question active" data-question-id="${question.id}">
                 <h3>${question.title}${question.required ? '<span style="color:red;"> *</span>' : ''}</h3>
@@ -96,6 +95,7 @@ class Quiz {
                 <div class="co-quiz-navigation">
                     ${this.quiz.allow_back && index > 0 ? 
                         `<button type="button" class="co-prev-question">${this.quiz.translations.previous || 'Previous'}</button>` : ''}
+                    <span class="co-progress-counter">${this.currentQuestionIndex + 1} / ${this.totalQuestions}</span>
                     <button type="button" class="${index === this.totalQuestions - 1 ? 'co-submit-quiz' : 'co-next-question'}">
                         ${index === this.totalQuestions - 1 ? (this.quiz.translations.submit_quiz || 'Submit Quiz') : (this.quiz.translations.next || 'Next')}
                     </button>
@@ -112,7 +112,7 @@ class Quiz {
         let answer;
         const isLast = next && this.currentQuestionIndex === this.totalQuestions - 1;
 
-        if (question.type === 'multiple_choice') {
+        if (question.type === 'select') {
             answer = jQuery(`input[name="co_answer_${question.id}[]"]:checked`).map(function() { return jQuery(this).val(); }).get();
         } else if (question.type === 'text') {
             answer = jQuery(`textarea[name="co_answer_${question.id}"]`).val().trim();

@@ -30,9 +30,9 @@ class QuizEntry {
     }
 
     submitForm() {
-        const full_name = jQuery('#co-full-name').val().trim();
-        const phone = jQuery('#co-phone').val().trim();
-        const email = jQuery('#co-email').val().trim();
+        const full_name = jQuery('#co-full-name').val()?.trim() || '';
+        const phone = jQuery('#co-phone').val()?.trim() || '';
+        const email = jQuery('#co-email').val()?.trim() || '';
 
         if (!this.validateForm(full_name, phone, email)) {
             return;
@@ -74,6 +74,11 @@ class QuizEntry {
 }
 
 jQuery(document).ready(function($) {
+    if (typeof coQuizEntry === 'undefined') {
+        console.error('coQuizEntry is not defined');
+        $('#co-quiz-entry').html(`<p>${coQuizEntry?.translations?.error_loading_quiz || 'Error loading quiz entry form.'}</p>`);
+        return;
+    }
     const quizEntry = new QuizEntry(coQuizEntry);
     quizEntry.init();
 });
