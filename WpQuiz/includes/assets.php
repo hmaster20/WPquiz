@@ -50,6 +50,35 @@ function co_admin_styles() {
         .co-numeric-answer input {
             margin-right: 5px;
         }
+        .co-single-choice-answers {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 5px;
+            overflow-x: auto;
+            padding: 5px;
+        }
+        .co-single-choice-answer {
+            flex: 0 0 auto;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 40px;
+        }
+        .co-single-choice-answer input {
+            margin-right: 5px;
+        }
+        .co-multiple-choice-answer {
+            flex: 0 0 auto;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 40px;
+        }
+        .co-multiple-choice-answer input {
+            margin-right: 5px;
+        }
         .co-unique-links-table th, .co-unique-links-table td {
             padding: 10px;
             vertical-align: middle;

@@ -9,6 +9,7 @@ class Quiz {
         this.container = jQuery('#co-quiz-questions');
         this.resultsContainer = jQuery('#co-quiz-results');
         this.thankYouContainer = jQuery('#co-quiz-thank-you');
+        this.progressContainer = jQuery('.progress-container');
         this.progressFill = jQuery('.progress-fill');
     }
 
@@ -62,16 +63,16 @@ class Quiz {
                     `;
                 }).join('') + `</div>` :
                 `<p>${this.quiz.translations.error_no_answers || 'Error: No answers available.'}</p>`;
-        } else if (isSingleChoice && isNumeric) {
+        } else if (isSingleChoice) {
             answersHtml = question.answers && Array.isArray(question.answers) ?
-                `<div class="co-numeric-answers">` +
+                `<div class="co-single-choice-answers${isNumeric ? ' co-numeric-answers' : ''}">` +
                 question.answers.map((answer, ansIndex) => {
                     if (!answer.text) {
                         console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
                         return '';
                     }
                     return `
-                        <label class="co-numeric-answer">
+                        <label class="co-single-choice-answer${isNumeric ? ' co-numeric-answer' : ''}">
                             <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''}>
                             ${answer.text}
                         </label>
@@ -86,10 +87,8 @@ class Quiz {
                         return '';
                     }
                     return `
-                        <label>
-                            <input type="${isMultipleChoice ? 'checkbox' : 'radio'}" 
-                                   name="co_answer_${question.id}${isMultipleChoice ? '[]' : ''}" 
-                                   value="${ansIndex}" ${question.required ? 'required' : ''}>
+                        <label class="co-multiple-choice-answer">
+                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
                             ${answer.text}
                         </label>
                     `;
@@ -117,6 +116,8 @@ class Quiz {
             </div>
         `;
         this.container.html(html);
+        this.progressContainer = jQuery('.progress-container');
+        this.progressFill = jQuery('.progress-fill');
         this.updateProgressBar();
     }
 

@@ -43,6 +43,144 @@ function co_add_quiz_meta_boxes() {
 }
 add_action('add_meta_boxes_co_quiz', 'co_add_quiz_meta_boxes');
 
+function co_quiz_questions_meta_box($post) {
+    wp_nonce_field('co_save_quiz', 'co_quiz_nonce');
+    $question_ids = get_post_meta($post->ID, '_co_questions', true) ?: [];
+    $questions = get_posts([
+        'post_type' => 'co_question',
+        'posts_per_page' => -1,
+    ]);
+    $new_questions = get_post_meta($post->ID, '_co_new_questions', true) ?: [];
+    ?>
+    <div id="co-quiz-questions">
+        <h4><?php _e('Select Existing Questions', 'career-orientation'); ?></h4>
+        <select name="co_questions[]" multiple style="width:100%;height:150px;">
+            <?php foreach ($questions as $question) : ?>
+            <option value="<?php echo esc_attr($question->ID); ?>" <?php echo in_array($question->ID, $question_ids) ? 'selected' : ''; ?>><?php echo esc_html($question->post_title); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <h4><?php _e('Add New Questions', 'career-orientation'); ?></h4>
+        <div id="co-new-questions-list">
+            <?php foreach ($new_questions as $index => $new_question) : 
+                $question_type = isset($new_question['type']) ? $new_question['type'] : 'multiple_choice';
+                $answers = isset($new_question['answers']) ? $new_question['answers'] : [];
+                ?>
+                <div class="co-new-question">
+                    <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($new_question['title']); ?>" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
+                    <label>
+                        <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][required]" value="yes" <?php checked(isset($new_question['required']) && $new_question['required'] === 'yes'); ?>>
+                        <?php _e('Required', 'career-orientation'); ?>
+                    </label>
+                    <p>
+                        <label><?php _e('Question Type:', 'career-orientation'); ?></label>
+                        <select name="co_new_questions[<?php echo esc_attr($index); ?>][type]" class="co-new-question-type">
+                            <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?>><?php _e('Multiple Choice', 'career-orientation'); ?></option>
+                            <option value="single_choice" <?php selected($question_type, 'single_choice'); ?>><?php _e('Single Choice', 'career-orientation'); ?></option>
+                            <option value="text" <?php selected($question_type, 'text'); ?>><?php _e('Text', 'career-orientation'); ?></option>
+                        </select>
+                    </p>
+                    <div class="co-new-answers <?php echo esc_attr($question_type); ?>">
+                        <?php if ($question_type !== 'text') : ?>
+                        <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                        <div class="co-new-answers-list">
+                            <?php foreach ($answers as $ans_index => $answer) : ?>
+                            <div class="co-answer">
+                                <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                                <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                                <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
+                        <?php else : ?>
+                        <p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <button type="button" class="button co-remove-new-question"><?php _e('Remove Question', 'career-orientation'); ?></button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <button type="button" class="button" id="co-add-new-question"><?php _e('Add New Question', 'career-orientation'); ?></button>
+    </div>
+    <script>
+        jQuery(document).ready(function($) {
+            console.log('co_quiz_questions_meta_box script loaded');
+            let questionIndex = <?php echo count($new_questions); ?>;
+            function toggleNewAnswersContainer($container) {
+                let type = $container.find('.co-new-question-type').val();
+                let answersContainer = $container.find('.co-new-answers');
+                console.log('toggleNewAnswersContainer: type=' + type);
+                answersContainer.removeClass('multiple_choice single_choice text').addClass(type);
+                if (type === 'text') {
+                    answersContainer.find('.co-new-answers-list, .co-add-new-answer').hide();
+                    if (!answersContainer.find('.text-notice').length) {
+                        answersContainer.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
+                    }
+                } else {
+                    answersContainer.find('.text-notice').remove();
+                    answersContainer.find('.co-new-answers-list, .co-add-new-answer').show();
+                }
+            }
+            $('#co-add-new-question').on('click', function() {
+                let newIndex = questionIndex++;
+                $('#co-new-questions-list').append(`
+                    <div class="co-new-question">
+                        <input type="text" name="co_new_questions[${newIndex}][title]" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
+                        <label>
+                            <input type="checkbox" name="co_new_questions[${newIndex}][required]" value="yes">
+                            <?php _e('Required', 'career-orientation'); ?>
+                        </label>
+                        <p>
+                            <label><?php _e('Question Type:', 'career-orientation'); ?></label>
+                            <select name="co_new_questions[${newIndex}][type]" class="co-new-question-type">
+                                <option value="multiple_choice"><?php _e('Multiple Choice', 'career-orientation'); ?></option>
+                                <option value="single_choice"><?php _e('Single Choice', 'career-orientation'); ?></option>
+                                <option value="text"><?php _e('Text', 'career-orientation'); ?></option>
+                            </select>
+                        </p>
+                        <div class="co-new-answers multiple_choice">
+                            <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                            <div class="co-new-answers-list"></div>
+                            <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
+                        </div>
+                        <button type="button" class="button co-remove-new-question"><?php _e('Remove Question', 'career-orientation'); ?></button>
+                    </div>
+                `);
+                toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
+            });
+            $(document).on('click', '.co-add-new-answer', function() {
+                let $question = $(this).closest('.co-new-question');
+                let index = $question.find('.co-answer').length;
+                if (index >= 30) {
+                    alert('<?php _e('Maximum 30 answers allowed.', 'career-orientation'); ?>');
+                    return;
+                }
+                $question.find('.co-new-answers-list').append(`
+                    <div class="co-answer">
+                        <input type="text" name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                        <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                        <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                    </div>
+                `);
+            });
+            $(document).on('click', '.co-remove-new-answer', function() {
+                $(this).parent().remove();
+            });
+            $(document).on('click', '.co-remove-new-question', function() {
+                $(this).parent().remove();
+                questionIndex--;
+            });
+            $(document).on('change', '.co-new-question-type', function() {
+                toggleNewAnswersContainer($(this).closest('.co-new-question'));
+            });
+            $('.co-new-question').each(function() {
+                toggleNewAnswersContainer($(this));
+            });
+        });
+    </script>
+    <?php
+}
+
 function co_quiz_shortcode_meta_box($post) {
     ?>
     <p><?php _e('Use this shortcode to publish the quiz:', 'career-orientation'); ?></p>
@@ -78,7 +216,7 @@ function co_answers_meta_box($post) {
     $required = get_post_meta($post->ID, '_co_required', true) === 'yes';
     $question_type = get_post_meta($post->ID, '_co_question_type', true) ?: 'multiple_choice';
     $numeric_answers = get_post_meta($post->ID, '_co_numeric_answers', true) === 'yes';
-    $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 10;
+    $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 1;
     ?>
     <div id="co-answers">
         <p>
@@ -106,8 +244,8 @@ function co_answers_meta_box($post) {
                 <div id="co-numeric-answers-settings" style="<?php echo $numeric_answers ? '' : 'display:none;'; ?>">
                     <p>
                         <label><?php _e('Number of answers:', 'career-orientation'); ?></label>
-                        <input type="range" name="co_numeric_count" id="co-numeric-count-slider" min="10" max="30" step="1" value="<?php echo esc_attr($numeric_count); ?>">
-                        <input type="number" name="co_numeric_count_input" id="co-numeric-count-input" min="10" max="30" step="1" value="<?php echo esc_attr($numeric_count); ?>">
+                        <input type="range" name="co_numeric_count" id="co-numeric-count-slider" min="1" max="30" step="1" value="<?php echo esc_attr($numeric_count); ?>">
+                        <input type="number" name="co_numeric_count_input" id="co-numeric-count-input" min="1" max="30" step="1" value="<?php echo esc_attr($numeric_count); ?>">
                         <button type="button" class="button co-numeric-decrement">-</button>
                         <button type="button" class="button co-numeric-increment">+</button>
                     </p>
@@ -176,14 +314,14 @@ function co_answers_meta_box($post) {
             });
             $('#co-numeric-count-input').on('input', function() {
                 let val = parseInt($(this).val());
-                if (isNaN(val) || val < 10) val = 10;
+                if (isNaN(val) || val < 1) val = 1;
                 if (val > 30) val = 30;
                 $(this).val(val);
                 $('#co-numeric-count-slider').val(val);
             });
             $('.co-numeric-increment').on('click', function() {
                 let input = $('#co-numeric-count-input');
-                let val = parseInt(input.val()) || 10;
+                let val = parseInt(input.val()) || 1;
                 if (val < 30) {
                     input.val(val + 1);
                     $('#co-numeric-count-slider').val(val + 1);
@@ -191,8 +329,8 @@ function co_answers_meta_box($post) {
             });
             $('.co-numeric-decrement').on('click', function() {
                 let input = $('#co-numeric-count-input');
-                let val = parseInt(input.val()) || 10;
-                if (val > 10) {
+                let val = parseInt(input.val()) || 1;
+                if (val > 1) {
                     input.val(val - 1);
                     $('#co-numeric-count-slider').val(val - 1);
                 }
@@ -243,7 +381,7 @@ function co_save_question($post_id) {
     }
     if (isset($_POST['co_numeric_answers']) && in_array($_POST['co_question_type'], ['multiple_choice', 'single_choice'])) {
         update_post_meta($post_id, '_co_numeric_answers', 'yes');
-        $numeric_count = isset($_POST['co_numeric_count']) ? min(max(intval($_POST['co_numeric_count']), 10), 30) : 10;
+        $numeric_count = isset($_POST['co_numeric_count']) ? min(max(intval($_POST['co_numeric_count']), 1), 30) : 1;
         update_post_meta($post_id, '_co_numeric_count', $numeric_count);
         $answers = [];
         for ($i = 1; $i <= $numeric_count; $i++) {
