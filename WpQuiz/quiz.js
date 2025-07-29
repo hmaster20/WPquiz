@@ -45,6 +45,8 @@ class Quiz {
         const isNumeric = question.numeric_answers === 'yes';
         let answersHtml = '';
     
+        console.log(`Question type: ${question.type}, is_numeric=${isNumeric}, question_id=${question.id}`);
+    
         if (isText) {
             answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
         } else if (isMultipleChoice && isNumeric) {
@@ -120,11 +122,13 @@ class Quiz {
         this.progressFill = jQuery('.progress-fill');
         this.updateProgressBar();
         console.log(`Answer container classes: ${jQuery('.co-single-choice-answers').attr('class') || 'none'}`);
+        // Проверка применения стилей
+        console.log(`Applied styles for .co-single-choice-answers: display=${jQuery('.co-single-choice-answers').css('display') || 'none'}, flex-wrap=${jQuery('.co-single-choice-answers').css('flex-wrap') || 'none'}`);
     }
 
     saveAnswer(next) {
         const question = this.quiz.questions[this.currentQuestionIndex];
-        console.log(`saveAnswer: question_id=${question.id}, next=${next}`);
+        console.log(`saveAnswer: question_id=${question.id}, next=${next}, type=${question.type}`);
         let answer;
         const isLast = next && this.currentQuestionIndex === this.totalQuestions - 1;
 
