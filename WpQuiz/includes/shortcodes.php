@@ -40,6 +40,16 @@ function co_quiz_shortcode($atts) {
         error_log('No valid questions for quiz_id=' . $quiz_id);
         return __('No valid questions available for this quiz.', 'career-orientation');
     }
+    // Сортировка вопросов в порядке, указанном в $question_ids
+    $sorted_questions = [];
+    foreach ($question_ids as $qid) {
+        foreach ($questions as $question) {
+            if ($question['id'] == $qid) {
+                $sorted_questions[] = $question;
+                break;
+            }
+        }
+    }
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('co_quiz_nonce'),
@@ -47,7 +57,7 @@ function co_quiz_shortcode($atts) {
         'allow_back' => get_post_meta($quiz_id, '_co_allow_back', true) === 'yes',
         'show_results' => get_post_meta($quiz_id, '_co_show_results', true) === 'yes',
         'session_id' => $session_id,
-        'questions' => array_values($questions),
+        'questions' => array_values($sorted_questions),
         'translations' => [
             'please_answer' => __('Please answer the question.', 'career-orientation'),
             'error_saving' => __('Error saving answer. Please try again.', 'career-orientation'),

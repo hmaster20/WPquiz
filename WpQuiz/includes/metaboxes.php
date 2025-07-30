@@ -49,17 +49,41 @@ function co_quiz_questions_meta_box($post) {
     $questions = get_posts([
         'post_type' => 'co_question',
         'posts_per_page' => -1,
+        'post__in' => $question_ids,
+        'orderby' => 'post__in',
     ]);
     $new_questions = get_post_meta($post->ID, '_co_new_questions', true) ?: [];
     error_log('Rendering co_quiz_questions_meta_box for post_id=' . $post->ID);
     ?>
     <div id="co-quiz-questions">
         <h4><?php _e('Select Existing Questions', 'career-orientation'); ?></h4>
-        <select name="co_questions[]" multiple style="width:100%;height:150px;">
-            <?php foreach ($questions as $question) : ?>
-            <option value="<?php echo esc_attr($question->ID); ?>" <?php echo in_array($question->ID, $question_ids) ? 'selected' : ''; ?>><?php echo esc_html($question->post_title); ?></option>
+        <ul id="co-questions-list" class="co-sortable">
+            <?php foreach ($questions as $index => $question) : ?>
+            <li class="co-question-item" data-question-id="<?php echo esc_attr($question->ID); ?>">
+                <span class="co-question-title"><?php echo esc_html($question->post_title); ?></span>
+                <input type="hidden" name="co_questions[]" value="<?php echo esc_attr($question->ID); ?>">
+                <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
+                <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
+                <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
+            </li>
             <?php endforeach; ?>
-        </select>
+        </ul>
+        <p>
+            <select id="co-add-question-select" style="width: 100%;">
+                <option value=""><?php _e('Select a question to add', 'career-orientation'); ?></option>
+                <?php
+                $all_questions = get_posts([
+                    'post_type' => 'co_question',
+                    'posts_per_page' => -1,
+                ]);
+                foreach ($all_questions as $question) :
+                    if (!in_array($question->ID, $question_ids)) :
+                ?>
+                <option value="<?php echo esc_attr($question->ID); ?>"><?php echo esc_html($question->post_title); ?></option>
+                <?php endif; endforeach; ?>
+            </select>
+            <button type="button" class="button" id="co-add-existing-question"><?php _e('Add Question', 'career-orientation'); ?></button>
+        </p>
         <h4><?php _e('Add New Questions', 'career-orientation'); ?></h4>
         <div id="co-new-questions-list">
             <?php foreach ($new_questions as $index => $new_question) : 
@@ -112,6 +136,90 @@ function co_quiz_questions_meta_box($post) {
         jQuery(document).ready(function($) {
             console.log('co_quiz_questions_meta_box script loaded');
             let questionIndex = <?php echo count($new_questions); ?>;
+
+            // Инициализация jQuery UI Sortable
+            $('#co-questions-list').sortable({
+                placeholder: 'co-sortable-placeholder',
+                update: function(event, ui) {
+                    console.log('Questions reordered');
+                    let order = [];
+                    $('#co-questions-list .co-question-item').each(function() {
+                        order.push($(this).data('question-id'));
+                    });
+                    console.log('New question order:', order);
+                    $('input[name="co_questions[]"]').each(function(index) {
+                        $(this).val(order[index]);
+                    });
+                }
+            }).disableSelection();
+
+            // Добавление существующего вопроса
+            $('#co-add-existing-question').on('click', function() {
+                let questionId = $('#co-add-question-select').val();
+                let questionText = $('#co-add-question-select option:selected').text();
+                if (!questionId) {
+                    alert('<?php _e('Please select a question.', 'career-orientation'); ?>');
+                    return;
+                }
+                $('#co-questions-list').append(`
+                    <li class="co-question-item" data-question-id="${questionId}">
+                        <span class="co-question-title">${questionText}</span>
+                        <input type="hidden" name="co_questions[]" value="${questionId}">
+                        <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
+                        <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
+                        <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
+                    </li>
+                `);
+                $('#co-add-question-select option[value="' + questionId + '"]').remove();
+                console.log('Added existing question:', { id: questionId, text: questionText });
+            });
+
+            // Перемещение вопроса вверх
+            $(document).on('click', '.co-move-up', function() {
+                let $item = $(this).closest('.co-question-item');
+                let $prev = $item.prev();
+                if ($prev.length) {
+                    $item.insertBefore($prev);
+                    console.log('Moved question up:', $item.data('question-id'));
+                    updateQuestionOrder();
+                }
+            });
+
+            // Перемещение вопроса вниз
+            $(document).on('click', '.co-move-down', function() {
+                let $item = $(this).closest('.co-question-item');
+                let $next = $item.next();
+                if ($next.length) {
+                    $item.insertAfter($next);
+                    console.log('Moved question down:', $item.data('question-id'));
+                    updateQuestionOrder();
+                }
+            });
+
+            // Удаление вопроса из списка
+            $(document).on('click', '.co-remove-question', function() {
+                let $item = $(this).closest('.co-question-item');
+                let questionId = $item.data('question-id');
+                let questionText = $item.find('.co-question-title').text();
+                $('#co-add-question-select').append(`<option value="${questionId}">${questionText}</option>`);
+                $item.remove();
+                console.log('Removed question:', { id: questionId, text: questionText });
+                updateQuestionOrder();
+            });
+
+            // Обновление порядка вопросов
+            function updateQuestionOrder() {
+                let order = [];
+                $('#co-questions-list .co-question-item').each(function() {
+                    order.push($(this).data('question-id'));
+                });
+                console.log('Updated question order:', order);
+                $('input[name="co_questions[]"]').each(function(index) {
+                    $(this).val(order[index]);
+                });
+            }
+
+            // Переключение типа вопроса
             function toggleNewAnswersContainer($container) {
                 let type = $container.find('.co-new-question-type').val();
                 let answersContainer = $container.find('.co-new-answers');
@@ -127,6 +235,8 @@ function co_quiz_questions_meta_box($post) {
                     answersContainer.find('.co-new-answers-list, .co-add-new-answer, .co-compact-layout').show();
                 }
             }
+
+            // Добавление нового вопроса
             $('#co-add-new-question').on('click', function() {
                 let newIndex = questionIndex++;
                 $('#co-new-questions-list').append(`
@@ -158,6 +268,8 @@ function co_quiz_questions_meta_box($post) {
                 `);
                 toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
             });
+
+            // Добавление ответа для нового вопроса
             $(document).on('click', '.co-add-new-answer', function() {
                 let $question = $(this).closest('.co-new-question');
                 let index = $question.find('.co-answer').length;
@@ -173,21 +285,57 @@ function co_quiz_questions_meta_box($post) {
                     </div>
                 `);
             });
+
+            // Удаление ответа
             $(document).on('click', '.co-remove-new-answer', function() {
                 $(this).parent().remove();
             });
+
+            // Удаление нового вопроса
             $(document).on('click', '.co-remove-new-question', function() {
                 $(this).parent().remove();
                 questionIndex--;
             });
+
+            // Переключение типа вопроса
             $(document).on('change', '.co-new-question-type', function() {
                 toggleNewAnswersContainer($(this).closest('.co-new-question'));
             });
+
             $('.co-new-question').each(function() {
                 toggleNewAnswersContainer($(this));
             });
         });
     </script>
+    <style>
+        .co-sortable {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .co-question-item {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            cursor: move;
+        }
+        .co-question-item .co-question-title {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .co-question-item button {
+            margin-left: 5px;
+        }
+        .co-sortable-placeholder {
+            border: 1px dashed #0073aa;
+            background: #f0f0f0;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+    </style>
     <?php
 }
 
@@ -461,7 +609,8 @@ function co_save_quiz($post_id) {
             $post = get_post($id);
             return $post && $post->post_type === 'co_question';
         });
-        update_post_meta($post_id, '_co_questions', $valid_ids);
+        update_post_meta($post_id, '_co_questions', array_unique($valid_ids));
+        error_log('Saved question order for quiz_id=' . $post_id . ': ' . json_encode($valid_ids));
     } else {
         delete_post_meta($post_id, '_co_questions');
     }
@@ -508,6 +657,7 @@ function co_save_quiz($post_id) {
             $existing_questions = get_post_meta($post_id, '_co_questions', true) ?: [];
             $updated_questions = array_unique(array_merge($existing_questions, $new_question_ids));
             update_post_meta($post_id, '_co_questions', $updated_questions);
+            error_log('Added new questions to quiz_id=' . $post_id . ': ' . json_encode($new_question_ids));
         }
         delete_post_meta($post_id, '_co_new_questions');
     } else {

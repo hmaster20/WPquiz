@@ -10,6 +10,7 @@ add_action('wp_enqueue_scripts', 'co_enqueue_assets');
 
 function co_admin_enqueue_assets($hook) {
     wp_enqueue_script('jquery');
+    wp_enqueue_script('jquery-ui-sortable');
     wp_enqueue_style('co-styles', plugin_dir_url(__FILE__) . '../style.css', [], '3.7');
     if (in_array($hook, ['toplevel_page_co-dashboard', 'career-orientation_page_co-analytics', 'career-orientation_page_co-reports'])) {
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
@@ -146,11 +147,14 @@ function co_admin_scripts() {
     ?>
     <script>
         jQuery(document).ready(function($) {
-            if ($('#toplevel_page_co-dashboard').hasClass('wp-menu-open') === false && ['edit-tags.php', 'admin.php', 'edit.php', 'post-new.php'].includes(window.location.pathname.split('/').pop())) {
+            // Коррекция выделения пункта меню
+            if ($('#toplevel_page_co-dashboard').hasClass('wp-menu-open') === false) {
                 $('#toplevel_page_co-dashboard').addClass('wp-menu-open wp-has-current-submenu');
-                if (window.location.search.includes('post_type=co_quiz') || (window.location.search.includes('post_type=co_question') && window.location.pathname.includes('post-new.php'))) {
+                $('#toplevel_page_co-dashboard .wp-submenu a').removeClass('current');
+                if (window.location.search.includes('post_type=co_quiz')) {
+                    $('#toplevel_page_co-dashboard a[href="edit.php?post_type=co_quiz"]').addClass('current');
+                } else if (window.location.search.includes('post_type=co_question') && window.location.pathname.includes('post-new.php')) {
                     $('#toplevel_page_co-dashboard a[href="edit.php?post_type=co_question"]').addClass('current');
-                    $('#toplevel_page_co-dashboard .wp-submenu a').removeClass('current');
                 } else {
                     $('#toplevel_page_co-dashboard a.wp-has-current-submenu').addClass('current');
                 }
@@ -158,7 +162,6 @@ function co_admin_scripts() {
 
             $(document).on('click', '#co-add-new-question', function() {
                 console.log('Add New Question clicked');
-                $('#toplevel_page_co-dashboard').addClass('wp-menu-open wp-has-current-submenu');
                 $('#toplevel_page_co-dashboard .wp-submenu a').removeClass('current');
                 $('#toplevel_page_co-dashboard a[href="edit.php?post_type=co_question"]').addClass('current');
             });
