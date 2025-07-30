@@ -39,7 +39,7 @@ function co_admin_menu() {
     add_submenu_page(
         'co-dashboard',
         __('Questions Import/Export', 'career-orientation'),
-        __('Questions Import/Export', 'career-orientation'),
+        __('Questions Export', 'career-orientation'),
         'manage_options',
         'co-import-export',
         'co_import_export_page'

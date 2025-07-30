@@ -29,7 +29,7 @@ function co_dashboard_page() {
         <div class="co-dashboard-stats">
             <div class="co-stat-card">
                 <h3><?php _e('Total Quizzes Completed', 'career-orientation'); ?></h3>
-                <p><?php echo esc_html($total_quizzes); ?></p> <!-- Исправленная строка 224 -->
+                <p><?php echo esc_html($total_quizzes); ?></p>
             </div>
             <div class="co-stat-card">
                 <h3><?php _e('Last Activity', 'career-orientation'); ?></h3>
