@@ -36,18 +36,26 @@ function co_handle_quiz_submission() {
         return;
     }
     $question_type = get_post_meta($question_id, '_co_question_type', true) ?: 'single_choice';
+    $is_required = get_post_meta($question_id, '_co_required', true) === 'yes';
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_quiz_submissions';
     $user_id = get_current_user_id();
-    $result = false; // Инициализация переменной
+    $result = false;
+
+    // Пропускаем запись для необязательных вопросов с пустым ответом
+    if (!$is_required && empty($answers)) {
+        error_log('Skipping submission for optional question_id=' . $question_id . ' with empty answers');
+        wp_send_json_success();
+        return;
+    }
 
     if ($question_type === 'text') {
-        if (empty($answers)) {
+        if ($is_required && empty($answers)) {
             wp_send_json_error(['message' => __('No answer provided for text question.', 'career-orientation')]);
             error_log('Text question submission failed: No answer provided, quiz_id=' . $quiz_id . ', question_id=' . $question_id);
             return;
         }
-        $answer_text = sanitize_textarea_field($answers[0]);
+        $answer_text = !empty($answers) ? sanitize_textarea_field($answers[0]) : '';
         $result = $wpdb->insert($table_name, [
             'user_id' => $user_id,
             'quiz_id' => $quiz_id,
@@ -62,9 +70,9 @@ function co_handle_quiz_submission() {
     } else {
         $stored_answers = get_post_meta($question_id, '_co_answers', true) ?: [];
         error_log('Stored answers for question_id=' . $question_id . ': ' . json_encode($stored_answers));
-        if (empty($answers)) {
+        if ($is_required && empty($answers)) {
             wp_send_json_error(['message' => __('No answers provided.', 'career-orientation')]);
-            error_log('Submission failed: No answers provided, quiz_id=' . $quiz_id . ', question_id=' . $question_id);
+            error_log('Submission failed: No answers provided for required question, quiz_id=' . $quiz_id . ', question_id=' . $question_id);
             return;
         }
         foreach ($answers as $answer_id) {
@@ -89,7 +97,7 @@ function co_handle_quiz_submission() {
             }
         }
     }
-    if ($result === false) {
+    if ($result === false && !empty($answers)) {
         wp_send_json_error(['message' => __('Database error.', 'career-orientation')]);
         error_log('Database error: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id);
         return;

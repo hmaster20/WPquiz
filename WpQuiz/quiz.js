@@ -52,12 +52,13 @@ class Quiz {
         const isNumeric = question.numeric_answers === 'yes';
         const isNumericAnswersResult = this.isNumericAnswers(question.answers);
         const isCompact = question.compact_layout === 'yes' && (isNumeric || isNumericAnswersResult);
+        const savedAnswer = this.answers[question.id]; // Получаем сохраненный ответ
         let answersHtml = '';
 
-        console.log(`Question details: question_id=${question.id}, type=${question.type}, numeric_answers=${question.numeric_answers}, is_numeric=${isNumeric}, is_numeric_answers=${isNumericAnswersResult}, compact_layout=${question.compact_layout}, is_compact=${isCompact}, answers=`, question.answers);
+        console.log(`Question details: question_id=${question.id}, type=${question.type}, numeric_answers=${question.numeric_answers}, is_numeric=${isNumeric}, is_numeric_answers=${isNumericAnswersResult}, compact_layout=${question.compact_layout}, is_compact=${isCompact}, answers=`, question.answers, `saved_answer=`, savedAnswer);
     
         if (isText) {
-            answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
+            answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}">${savedAnswer || ''}</textarea>`;
         } else if (isMultipleChoice && isNumeric) {
             answersHtml = question.answers && Array.isArray(question.answers) ?
                 `<div class="co-numeric-answers">` +
@@ -66,9 +67,10 @@ class Quiz {
                         console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
                         return '';
                     }
+                    const isChecked = savedAnswer && savedAnswer.includes(String(ansIndex)) ? 'checked' : '';
                     return `
                         <label class="co-numeric-answer">
-                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
                             <span>${answer.text}</span>
                         </label>
                     `;
@@ -82,9 +84,10 @@ class Quiz {
                         console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
                         return '';
                     }
+                    const isChecked = savedAnswer === String(ansIndex) ? 'checked' : '';
                     return `
                         <label class="co-single-choice-answer${isNumeric ? ' co-numeric-answer' : ''}">
-                            <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                            <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
                             <span>${answer.text}</span>
                         </label>
                     `;
@@ -97,9 +100,10 @@ class Quiz {
                         console.warn(`Missing answer text: question_id=${question.id}, answer_index=${ansIndex}`);
                         return '';
                     }
+                    const isChecked = savedAnswer && savedAnswer.includes(String(ansIndex)) ? 'checked' : '';
                     return `
                         <label class="co-multiple-choice-answer">
-                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''}>
+                            <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
                             <span>${answer.text}</span>
                         </label>
                     `;
@@ -152,6 +156,7 @@ class Quiz {
             answer = jQuery(`input[name="co_answer_${question.id}"]:checked`).val();
         }
 
+        // Валидация только для обязательных вопросов при движении вперед
         if (next && question.required) {
             const isValid = question.type === 'text' ? answer !== '' : Array.isArray(answer) ? answer.length > 0 : answer !== undefined;
             if (!isValid) {
@@ -161,8 +166,22 @@ class Quiz {
             }
         }
 
+        // Сохраняем ответ (даже пустой для необязательных вопросов)
         this.answers[question.id] = answer;
         console.log(`Saved answer: question_id=${question.id}, answer=`, answer);
+
+        // Пропускаем AJAX-запрос для необязательных вопросов с пустым ответом
+        if (!question.required && ((question.type === 'text' && answer === '') || (Array.isArray(answer) && answer.length === 0) || answer === undefined)) {
+            console.log(`Skipping AJAX for optional question_id=${question.id} with empty answer`);
+            if (next) {
+                this.currentQuestionIndex++;
+                this.showQuestion(this.currentQuestionIndex);
+            } else {
+                this.currentQuestionIndex--;
+                this.showQuestion(this.currentQuestionIndex);
+            }
+            return true;
+        }
 
         jQuery.ajax({
             url: this.quiz.ajax_url,
