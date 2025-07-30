@@ -39,6 +39,11 @@ class Quiz {
 
     showQuestion(index) {
         console.log(`showQuestion: index=${index}, quiz_id=${this.quiz.quiz_id}`);
+        if (index >= this.totalQuestions || index < 0) {
+            console.error(`Invalid question index: index=${index}, total_questions=${this.totalQuestions}`);
+            this.container.html(`<p>${this.quiz.translations?.error_question_not_found || 'Error: Question not found.'}</p>`);
+            return;
+        }
         const question = this.quiz.questions[index];
         if (!question || !question.title || !question.id) {
             console.error('Invalid question data: index=' + index, question);
@@ -140,6 +145,11 @@ class Quiz {
 
     saveAnswer(next) {
         const question = this.quiz.questions[this.currentQuestionIndex];
+        if (!question || !question.id) {
+            console.error(`Invalid question at index=${this.currentQuestionIndex}`);
+            this.container.html(`<p>${this.quiz.translations?.error_question_not_found || 'Error: Question not found.'}</p>`);
+            return false;
+        }
         console.log(`saveAnswer: question_id=${question.id}, next=${next}, type=${question.type}`);
         let answer;
         const isLast = next && this.currentQuestionIndex === this.totalQuestions - 1;
@@ -173,7 +183,14 @@ class Quiz {
         // Пропускаем AJAX-запрос для необязательных вопросов с пустым ответом
         if (!question.required && ((question.type === 'text' && answer === '') || (Array.isArray(answer) && answer.length === 0) || answer === undefined)) {
             console.log(`Skipping AJAX for optional question_id=${question.id} with empty answer`);
-            if (next) {
+            if (isLast) {
+                this.container.hide();
+                this.thankYouContainer.show();
+                if (this.quiz.show_results) {
+                    this.resultsContainer.show();
+                }
+                console.log(`Quiz completed without AJAX: quiz_id=${this.quiz.quiz_id}, session_id=${this.quiz.session_id}`);
+            } else if (next) {
                 this.currentQuestionIndex++;
                 this.showQuestion(this.currentQuestionIndex);
             } else {

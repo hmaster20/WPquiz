@@ -16,6 +16,30 @@ function co_quiz_shortcode($atts) {
     }
     $session_id = wp_generate_uuid4();
     error_log('Generated session_id for quiz_id=' . $quiz_id . ': ' . $session_id);
+    $questions = array_filter(array_map(function($qid) {
+        $question = get_post($qid);
+        if (!$question || $question->post_type !== 'co_question') {
+            error_log('Invalid question skipped: question_id=' . $qid);
+            return null;
+        }
+        $question_data = [
+            'id' => $qid,
+            'title' => $question->post_title,
+            'type' => get_post_meta($qid, '_co_question_type', true) ?: 'multiple_choice',
+            'required' => get_post_meta($qid, '_co_required', true) === 'yes',
+            'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes',
+            'compact_layout' => get_post_meta($qid, '_co_compact_layout', true) === 'yes' ? 'yes' : '',
+            'answers' => get_post_meta($qid, '_co_answers', true) ?: []
+        ];
+        error_log('Question data for question_id=' . $qid . ': ' . json_encode($question_data));
+        return $question_data;
+    }, $question_ids), function($question) {
+        return $question !== null;
+    });
+    if (empty($questions)) {
+        error_log('No valid questions for quiz_id=' . $quiz_id);
+        return __('No valid questions available for this quiz.', 'career-orientation');
+    }
     $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('co_quiz_nonce'),
@@ -23,23 +47,7 @@ function co_quiz_shortcode($atts) {
         'allow_back' => get_post_meta($quiz_id, '_co_allow_back', true) === 'yes',
         'show_results' => get_post_meta($quiz_id, '_co_show_results', true) === 'yes',
         'session_id' => $session_id,
-        'questions' => array_map(function($qid) {
-            $question = get_post($qid);
-            if (!$question || $question->post_type !== 'co_question') {
-                return null;
-            }
-            $question_data = [
-                'id' => $qid,
-                'title' => $question->post_title,
-                'type' => get_post_meta($qid, '_co_question_type', true) ?: 'multiple_choice',
-                'required' => get_post_meta($qid, '_co_required', true) === 'yes',
-                'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes',
-                'compact_layout' => get_post_meta($qid, '_co_compact_layout', true) === 'yes' ? 'yes' : '',
-                'answers' => get_post_meta($qid, '_co_answers', true) ?: []
-            ];
-            error_log('Question data for question_id=' . $qid . ': ' . json_encode($question_data));
-            return $question_data;
-        }, $question_ids),
+        'questions' => array_values($questions),
         'translations' => [
             'please_answer' => __('Please answer the question.', 'career-orientation'),
             'error_saving' => __('Error saving answer. Please try again.', 'career-orientation'),
@@ -56,7 +64,9 @@ function co_quiz_shortcode($atts) {
             'your_score' => __('Your total score: ', 'career-orientation'),
             'recommendation' => __('Recommendation: ', 'career-orientation'),
             'creative_roles' => __('Consider creative or leadership roles.', 'career-orientation'),
-            'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation')
+            'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation'),
+            'no_questions' => __('No questions available.', 'career-orientation'),
+            'text_too_long' => __('Answer is too long.', 'career-orientation')
         ],
     ];
     error_log('Quiz data prepared for quiz_id=' . $quiz_id . ': ' . json_encode($quiz_data));
