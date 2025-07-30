@@ -34,6 +34,7 @@ function co_install() {
         id BIGINT(20) UNIQUE NOT NULL AUTO_INCREMENT,
         quiz_id BIGINT(20) UNSIGNED NOT NULL,
         token VARCHAR(64) NOT NULL,
+        session_id VARCHAR(64) DEFAULT '',
         full_name VARCHAR(255) NOT NULL DEFAULT '',
         phone VARCHAR(50) NOT NULL DEFAULT '',
         email VARCHAR(100) NOT NULL DEFAULT '',
@@ -41,18 +42,26 @@ function co_install() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         used_at DATETIME DEFAULT NULL,
         PRIMARY KEY (id),
-        UNIQUE KEY token (token)
+        UNIQUE KEY token (token),
+        INDEX idx_quiz_session (quiz_id, session_id)
     ) $charset_collate;";
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_results);
     dbDelta($sql_links);
 
-    // Проверка и добавление столбца session_id
+    // Проверка и добавление столбца session_id в wp_co_results
     $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_results LIKE 'session_id'");
     if (empty($column_exists)) {
         $wpdb->query("ALTER TABLE $table_results ADD session_id VARCHAR(64) DEFAULT '' AFTER quiz_date");
         error_log('Added session_id column to wp_co_results');
+    }
+
+    // Проверка и добавление столбца session_id в wp_co_unique_links
+    $column_exists_links = $wpdb->get_results("SHOW COLUMNS FROM $table_links LIKE 'session_id'");
+    if (empty($column_exists_links)) {
+        $wpdb->query("ALTER TABLE $table_links ADD session_id VARCHAR(64) DEFAULT '' AFTER token");
+        error_log('Added session_id column to wp_co_unique_links');
     }
 
     // Добавление страницы quiz-entry

@@ -93,12 +93,14 @@ function co_quiz_entry_shortcode($atts) {
     if ($link->is_used) {
         return __('This quiz link has already been used.', 'career-orientation');
     }
+    $session_id = wp_generate_uuid4();
     wp_enqueue_script('co-quiz-entry-script', plugin_dir_url(__FILE__) . '../quiz-entry.js', ['jquery'], '3.7', true);
     wp_localize_script('co-quiz-entry-script', 'coQuizEntry', [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('co_quiz_entry_nonce'),
         'quiz_id' => $link->quiz_id,
         'token' => $token,
+        'session_id' => $session_id,
         'translations' => [
             'please_fill_all_fields' => __('Please fill in all fields.', 'career-orientation'),
             'invalid_email' => __('Invalid email address.', 'career-orientation'),

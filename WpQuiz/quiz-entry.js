@@ -33,6 +33,7 @@ class QuizEntry {
         const full_name = jQuery('#co-full-name').val()?.trim() || '';
         const phone = jQuery('#co-phone').val()?.trim() || '';
         const email = jQuery('#co-email').val()?.trim() || '';
+        const session_id = this.data.session_id; // Добавляем session_id из данных
 
         if (!this.validateForm(full_name, phone, email)) {
             return;
@@ -47,10 +48,11 @@ class QuizEntry {
                 token: this.data.token,
                 full_name,
                 phone,
-                email
+                email,
+                session_id // Передаем session_id в AJAX-запрос
             },
             beforeSend: () => {
-                console.log('Sending quiz entry data:', { full_name, phone, email });
+                console.log('Sending quiz entry data:', { full_name, phone, email, session_id });
             },
             success: (response) => {
                 console.log('Quiz entry response:', response);

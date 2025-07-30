@@ -156,6 +156,7 @@ function co_handle_quiz_entry() {
     $full_name = sanitize_text_field($_POST['full_name']);
     $phone = sanitize_text_field($_POST['phone']);
     $email = sanitize_email($_POST['email']);
+    $session_id = isset($_POST['session_id']) ? sanitize_text_field($_POST['session_id']) : wp_generate_uuid4();
     if (!$full_name || !$phone || !$email) {
         wp_send_json_error(['message' => __('Please fill in all fields.', 'career-orientation')]);
         error_log('Quiz entry failed: Missing required fields');
@@ -183,6 +184,7 @@ function co_handle_quiz_entry() {
         'full_name' => $full_name,
         'phone' => $phone,
         'email' => $email,
+        'session_id' => $session_id,
         'is_used' => 1,
         'used_at' => current_time('mysql'),
     ], ['token' => $token]);
@@ -191,8 +193,8 @@ function co_handle_quiz_entry() {
         error_log('Quiz entry failed: Database error for token: ' . $token);
         return;
     }
-    error_log('Quiz entry successful: token=' . $token . ', full_name=' . $full_name . ', email=' . $email);
-    wp_send_json_success();
+    error_log('Quiz entry successful: token=' . $token . ', full_name=' . $full_name . ', email=' . $email . ', session_id=' . $session_id);
+    wp_send_json_success(['session_id' => $session_id]);
 }
 add_action('wp_ajax_co_quiz_entry', 'co_handle_quiz_entry');
 add_action('wp_ajax_nopriv_co_quiz_entry', 'co_handle_quiz_entry');
