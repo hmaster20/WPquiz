@@ -65,6 +65,7 @@ function co_quiz_questions_meta_box($post) {
             <?php foreach ($new_questions as $index => $new_question) : 
                 $question_type = isset($new_question['type']) ? $new_question['type'] : 'multiple_choice';
                 $answers = isset($new_question['answers']) ? $new_question['answers'] : [];
+                $compact_layout = isset($new_question['compact_layout']) ? $new_question['compact_layout'] : '';
                 ?>
                 <div class="co-new-question">
                     <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($new_question['title']); ?>" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
@@ -83,6 +84,10 @@ function co_quiz_questions_meta_box($post) {
                     <div class="co-new-answers <?php echo esc_attr($question_type); ?>">
                         <?php if ($question_type !== 'text') : ?>
                         <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                        <label>
+                            <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][compact_layout]" value="yes" <?php checked($compact_layout, 'yes'); ?> class="co-compact-layout">
+                            <?php _e('Compact Layout', 'career-orientation'); ?>
+                        </label>
                         <div class="co-new-answers-list">
                             <?php foreach ($answers as $ans_index => $answer) : ?>
                             <div class="co-answer">
@@ -113,13 +118,13 @@ function co_quiz_questions_meta_box($post) {
                 console.log('toggleNewAnswersContainer: type=' + type);
                 answersContainer.removeClass('multiple_choice single_choice text').addClass(type);
                 if (type === 'text') {
-                    answersContainer.find('.co-new-answers-list, .co-add-new-answer').hide();
+                    answersContainer.find('.co-new-answers-list, .co-add-new-answer, .co-compact-layout').hide();
                     if (!answersContainer.find('.text-notice').length) {
                         answersContainer.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
                     }
                 } else {
                     answersContainer.find('.text-notice').remove();
-                    answersContainer.find('.co-new-answers-list, .co-add-new-answer').show();
+                    answersContainer.find('.co-new-answers-list, .co-add-new-answer, .co-compact-layout').show();
                 }
             }
             $('#co-add-new-question').on('click', function() {
@@ -141,6 +146,10 @@ function co_quiz_questions_meta_box($post) {
                         </p>
                         <div class="co-new-answers multiple_choice">
                             <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                            <label>
+                                <input type="checkbox" name="co_new_questions[${newIndex}][compact_layout]" value="yes" class="co-compact-layout">
+                                <?php _e('Compact Layout', 'career-orientation'); ?>
+                            </label>
                             <div class="co-new-answers-list"></div>
                             <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
                         </div>
@@ -218,6 +227,7 @@ function co_answers_meta_box($post) {
     $question_type = get_post_meta($post->ID, '_co_question_type', true) ?: 'multiple_choice';
     $numeric_answers = get_post_meta($post->ID, '_co_numeric_answers', true) === 'yes';
     $numeric_count = get_post_meta($post->ID, '_co_numeric_count', true) ?: 1;
+    $compact_layout = get_post_meta($post->ID, '_co_compact_layout', true) === 'yes';
     ?>
     <div id="co-answers">
         <p>
@@ -242,6 +252,12 @@ function co_answers_meta_box($post) {
                         <?php _e('Use numeric answers (1 to 30)', 'career-orientation'); ?>
                     </label>
                 </p>
+                <p id="co-compact-layout-wrapper" style="<?php echo ($question_type === 'multiple_choice' || $question_type === 'single_choice') ? '' : 'display:none;'; ?>">
+                    <label>
+                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout" value="yes" <?php checked($compact_layout); ?>>
+                        <?php _e('Compact Layout', 'career-orientation'); ?>
+                    </label>
+                </p>
                 <div id="co-numeric-answers-settings" style="<?php echo $numeric_answers ? '' : 'display:none;'; ?>">
                     <p>
                         <label><?php _e('Number of answers:', 'career-orientation'); ?></label>
@@ -254,6 +270,12 @@ function co_answers_meta_box($post) {
             </div>
             <?php if ($question_type !== 'text' && !$numeric_answers) : ?>
                 <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                <p>
+                    <label>
+                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout" value="yes" <?php checked($compact_layout); ?>>
+                        <?php _e('Compact Layout', 'career-orientation'); ?>
+                    </label>
+                </p>
                 <div id="co-answers-list">
                     <?php foreach ($answers as $index => $answer) : ?>
                         <div class="co-answer">
@@ -281,16 +303,19 @@ function co_answers_meta_box($post) {
                 let type = $('#co-question-type').val();
                 let container = $('#co-answers-container');
                 let numericWrapper = $('#co-numeric-answers-wrapper');
+                let compactLayoutWrapper = $('#co-compact-layout-wrapper');
                 console.log('toggleAnswersContainer: type=' + type + ', numeric_answers_checked=' + ($('#co-numeric-answers').is(':checked') ? 'true' : 'false'));
                 container.removeClass('multiple_choice single_choice text').addClass(type);
                 if (type === 'text') {
-                    container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings').hide();
+                    container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings, #co-compact-layout').hide();
                     numericWrapper.hide();
+                    compactLayoutWrapper.hide();
                     if (!container.find('.text-notice').length) {
                         container.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
                     }
                 } else {
                     numericWrapper.show();
+                    compactLayoutWrapper.show();
                     if ($('#co-numeric-answers').is(':checked')) {
                         container.find('#co-answers-list, #co-add-answer').hide();
                         container.find('#co-numeric-answers-settings').show();
@@ -380,6 +405,11 @@ function co_save_question($post_id) {
     } else {
         delete_post_meta($post_id, '_co_required');
     }
+    if (isset($_POST['co_compact_layout']) && in_array($_POST['co_question_type'], ['multiple_choice', 'single_choice'])) {
+        update_post_meta($post_id, '_co_compact_layout', 'yes');
+    } else {
+        delete_post_meta($post_id, '_co_compact_layout');
+    }
     if (isset($_POST['co_numeric_answers']) && in_array($_POST['co_question_type'], ['multiple_choice', 'single_choice'])) {
         update_post_meta($post_id, '_co_numeric_answers', 'yes');
         $numeric_count = isset($_POST['co_numeric_count']) ? min(max(intval($_POST['co_numeric_count']), 1), 30) : 1;
@@ -454,6 +484,9 @@ function co_save_quiz($post_id) {
                 }
                 if (isset($new_question['required']) && $new_question['required'] === 'yes') {
                     update_post_meta($new_question_id, '_co_required', 'yes');
+                }
+                if (isset($new_question['compact_layout']) && in_array($new_question['type'], ['multiple_choice', 'single_choice'])) {
+                    update_post_meta($new_question_id, '_co_compact_layout', 'yes');
                 }
                 if ($question_type !== 'text' && isset($new_question['answers']) && is_array($new_question['answers'])) {
                     $answers = [];

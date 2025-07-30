@@ -16,8 +16,7 @@ function co_quiz_shortcode($atts) {
     }
     $session_id = wp_generate_uuid4();
     error_log('Generated session_id for quiz_id=' . $quiz_id . ': ' . $session_id);
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . '../quiz.js', ['jquery'], '3.7', true);
-    wp_localize_script('co-quiz-script', 'coQuiz', [
+    $quiz_data = [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('co_quiz_nonce'),
         'quiz_id' => $quiz_id,
@@ -29,14 +28,17 @@ function co_quiz_shortcode($atts) {
             if (!$question || $question->post_type !== 'co_question') {
                 return null;
             }
-            return [
+            $question_data = [
                 'id' => $qid,
                 'title' => $question->post_title,
                 'type' => get_post_meta($qid, '_co_question_type', true) ?: 'multiple_choice',
                 'required' => get_post_meta($qid, '_co_required', true) === 'yes',
                 'numeric_answers' => get_post_meta($qid, '_co_numeric_answers', true) === 'yes',
+                'compact_layout' => get_post_meta($qid, '_co_compact_layout', true) === 'yes' ? 'yes' : '',
                 'answers' => get_post_meta($qid, '_co_answers', true) ?: []
             ];
+            error_log('Question data for question_id=' . $qid . ': ' . json_encode($question_data));
+            return $question_data;
         }, $question_ids),
         'translations' => [
             'please_answer' => __('Please answer the question.', 'career-orientation'),
@@ -56,7 +58,10 @@ function co_quiz_shortcode($atts) {
             'creative_roles' => __('Consider creative or leadership roles.', 'career-orientation'),
             'analytical_roles' => __('Consider analytical or technical roles.', 'career-orientation')
         ],
-    ]);
+    ];
+    error_log('Quiz data prepared for quiz_id=' . $quiz_id . ': ' . json_encode($quiz_data));
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . '../quiz.js', ['jquery'], '3.7', true);
+    wp_localize_script('co-quiz-script', 'coQuiz', $quiz_data);
     ob_start();
     ?>
     <div class="co-quiz-container" id="co-quiz-<?php echo esc_attr($quiz_id); ?>">

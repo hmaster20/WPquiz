@@ -20,6 +20,7 @@ class Quiz {
             return;
         }
         console.log(`Quiz initialized: quiz_id=${this.quiz.quiz_id}, total_questions=${this.totalQuestions}`);
+        console.log('Quiz data:', JSON.stringify(this.quiz, null, 2));
         this.showQuestion(this.currentQuestionIndex);
         this.bindEvents();
     }
@@ -28,6 +29,12 @@ class Quiz {
         const progress = ((this.currentQuestionIndex + 1) / this.totalQuestions) * 100;
         this.progressFill.css('width', `${progress}%`);
         console.log(`Progress bar updated: index=${this.currentQuestionIndex}, progress=${progress.toFixed(2)}%`);
+    }
+
+    isNumericAnswers(answers) {
+        const result = answers.every(answer => !isNaN(answer.text) && Number.isInteger(parseFloat(answer.text)));
+        console.log('isNumericAnswers:', { answers, result });
+        return result;
     }
 
     showQuestion(index) {
@@ -43,9 +50,11 @@ class Quiz {
         const isMultipleChoice = question.type === 'multiple_choice';
         const isSingleChoice = question.type === 'single_choice';
         const isNumeric = question.numeric_answers === 'yes';
+        const isNumericAnswersResult = this.isNumericAnswers(question.answers);
+        const isCompact = question.compact_layout === 'yes' && (isNumeric || isNumericAnswersResult);
         let answersHtml = '';
-    
-        console.log(`Question type: ${question.type}, is_numeric=${isNumeric}, question_id=${question.id}`);
+
+        console.log(`Question details: question_id=${question.id}, type=${question.type}, numeric_answers=${question.numeric_answers}, is_numeric=${isNumeric}, is_numeric_answers=${isNumericAnswersResult}, compact_layout=${question.compact_layout}, is_compact=${isCompact}, answers=`, question.answers);
     
         if (isText) {
             answersHtml = `<textarea name="co_answer_${question.id}" ${question.required ? 'required' : ''} placeholder="${this.quiz.translations.enter_answer || 'Enter your answer'}"></textarea>`;
@@ -104,7 +113,7 @@ class Quiz {
             </div>
             <div class="co-question active" data-question-id="${question.id}">
                 <h3>${question.title}${question.required ? '<span style="color:red;"> *</span>' : ''}</h3>
-                <div class="co-answer-options">
+                <div class="co-answer-options${isCompact ? ' co-compact-layout' : ''}">
                     ${answersHtml}
                 </div>
                 <div class="co-quiz-navigation">
@@ -121,9 +130,8 @@ class Quiz {
         this.progressContainer = jQuery('.progress-container');
         this.progressFill = jQuery('.progress-fill');
         this.updateProgressBar();
-        console.log(`Answer container classes: ${jQuery('.co-single-choice-answers').attr('class') || 'none'}`);
-        // Проверка применения стилей
-        console.log(`Applied styles for .co-single-choice-answers: display=${jQuery('.co-single-choice-answers').css('display') || 'none'}, flex-wrap=${jQuery('.co-single-choice-answers').css('flex-wrap') || 'none'}`);
+        console.log(`Answer container classes: ${jQuery('.co-answer-options').attr('class') || 'none'}`);
+        console.log(`Applied styles for .co-answer-options: compact_layout=${isCompact}, display=${jQuery('.co-answer-options').css('display') || 'none'}, flex-direction=${jQuery('.co-answer-options').css('flex-direction') || 'none'}`);
     }
 
     saveAnswer(next) {

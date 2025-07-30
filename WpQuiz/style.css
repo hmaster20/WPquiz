@@ -116,21 +116,19 @@
 /* Стили для вариантов ответов */
 .co-answer-options {
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Вертикальное расположение по умолчанию */
     gap: 12px;
+    padding: 10px; /* Добавлен padding для читаемости */
 }
 
+/* Стили для отдельных ответов */
 .co-answer-options label {
-    display: flex;
-    align-items: center;
     font-size: 1rem;
-    color: #2d3748;
-    padding: 14px;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    padding: 12px; /* Увеличен padding для улучшения читаемости */
+    border: 1px solid #ddd;
+    border-radius: 4px;
     cursor: pointer;
+    background: #fff;
 }
 
 .co-answer-options label:hover {
@@ -145,6 +143,31 @@
     accent-color: #2b6cb0;
     width: 18px;
     height: 18px;
+}
+
+/* Стили для компактного горизонтального размещения */
+.co-answer-options.co-compact-layout {
+    flex-direction: row; /* Горизонтальное расположение */
+    flex-wrap: nowrap; /* Без переноса */
+    justify-content: space-between; /* Равномерное распределение */
+    gap: 5px; /* Минимальный зазор между элементами */
+    padding: 5px; /* Минимальный padding для компактности */
+    overflow-x: auto; /* Прокрутка при необходимости */
+}
+
+.co-answer-options.co-compact-layout label {
+    flex: 1; /* Равномерное распределение ширины */
+    min-width: 50px; /* Минимальная ширина для читаемости */
+    text-align: center; /* Центрирование текста */
+    padding: 8px; /* Уменьшенный padding */
+    margin: 0; /* Убраны отступы */
+    font-size: 0.9rem; /* Уменьшенный шрифт для компактности */
+}
+
+/* Стили для одиночного и множественного выбора */
+.co-single-choice-answers,
+.co-numeric-answers {
+    display: contents; /* Убираем влияние контейнера, чтобы .co-answer-options управлял расположением */
 }
 
 /* Стили для текстового поля */
@@ -302,7 +325,7 @@
     background: #2c5282;
 }
 
-/* Адаптивность */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
     .co-quiz-container {
         padding: 20px;
@@ -318,7 +341,7 @@
 
     .co-answer-options label {
         font-size: 0.95rem;
-        padding: 12px;
+        padding: 10px;
     }
 
     .co-quiz-navigation {
@@ -381,5 +404,10 @@
     }
     #wpwrap #co-numeric-answers-settings .button {
         margin: 5px;
+    }
+
+    .co-answer-options.co-compact-layout label {
+        min-width: 40px; /* Уменьшенная минимальная ширина для мобильных */
+        font-size: 0.85rem;
     }
 }

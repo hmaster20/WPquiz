@@ -15,7 +15,8 @@ function co_handle_quiz_submission() {
     $session_id = isset($_POST['session_id']) ? sanitize_text_field($_POST['session_id']) : '';
     $token = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
     
-    error_log('Received quiz submission: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id . ', token=' . $token);
+    error_log('Received quiz submission: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id . ', token=' . $token . ', answers=' . json_encode($answers));
+    error_log('Full POST data: ' . json_encode($_POST, JSON_UNESCAPED_SLASHES));
 
     if ($token) {
         global $wpdb;
@@ -38,8 +39,14 @@ function co_handle_quiz_submission() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'co_quiz_submissions';
     $user_id = get_current_user_id();
+    $result = false; // Инициализация переменной
 
     if ($question_type === 'text') {
+        if (empty($answers)) {
+            wp_send_json_error(['message' => __('No answer provided for text question.', 'career-orientation')]);
+            error_log('Text question submission failed: No answer provided, quiz_id=' . $quiz_id . ', question_id=' . $question_id);
+            return;
+        }
         $answer_text = sanitize_textarea_field($answers[0]);
         $result = $wpdb->insert($table_name, [
             'user_id' => $user_id,
@@ -54,6 +61,12 @@ function co_handle_quiz_submission() {
         error_log('Text answer saved: quiz_id=' . $quiz_id . ', question_id=' . $question_id . ', session_id=' . $session_id . ', text="' . $answer_text . '"');
     } else {
         $stored_answers = get_post_meta($question_id, '_co_answers', true) ?: [];
+        error_log('Stored answers for question_id=' . $question_id . ': ' . json_encode($stored_answers));
+        if (empty($answers)) {
+            wp_send_json_error(['message' => __('No answers provided.', 'career-orientation')]);
+            error_log('Submission failed: No answers provided, quiz_id=' . $quiz_id . ', question_id=' . $question_id);
+            return;
+        }
         foreach ($answers as $answer_id) {
             $answer_id = intval($answer_id);
             if (!isset($stored_answers[$answer_id])) {
