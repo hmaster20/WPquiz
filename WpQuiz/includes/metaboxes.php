@@ -126,8 +126,8 @@ function co_quiz_questions_meta_box($post) {
                                     <textarea name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" class="co-answer-text-hidden" style="display: none;"><?php echo esc_textarea($answer['text']); ?></textarea>
                                 </div>
                                 <div class="co-answer-right">
-                                    <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                                     <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                                    <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -301,8 +301,8 @@ function co_quiz_questions_meta_box($post) {
                             <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                         </div>
                         <div class="co-answer-right">
-                            <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][guess]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                             <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                            <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                         </div>
                     </div>
                 `);
@@ -584,8 +584,8 @@ function co_answers_meta_box($post) {
                                 <textarea name="co_answers[<?php echo esc_attr($index); ?>][text]" class="co-answer-text-hidden" style="display: none;"><?php echo esc_textarea($answer['text']); ?></textarea>
                             </div>
                             <div class="co-answer-right">
-                                <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                                 <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                                <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -684,8 +684,8 @@ function co_answers_meta_box($post) {
                             <textarea name="co_answers[${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                         </div>
                         <div class="co-answer-right">
-                            <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                             <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                            <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                         </div>
                     </div>
                 `);
