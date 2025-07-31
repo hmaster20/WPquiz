@@ -115,15 +115,20 @@ function co_quiz_questions_meta_box($post) {
                         <div class="co-new-answers-list">
                             <?php foreach ($answers as $ans_index => $answer) : ?>
                             <div class="co-answer">
-                                <div class="co-formatting-toolbar">
-                                    <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                                    <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                                    <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                                    <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                                <div class="co-answer-left">
+                                    <div class="co-formatting-toolbar">
+                                        <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                        <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                        <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                        <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                                    </div>
+                                    <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"><?php echo wp_kses($answer['text'], ['b' => [], 'i' => [], 'u' => [], 'br' => []]); ?></div>
+                                    <textarea name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" class="co-answer-text-hidden" style="display: none;"><?php echo esc_textarea($answer['text']); ?></textarea>
                                 </div>
-                                <textarea name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"><?php echo esc_textarea($answer['text']); ?></textarea>
-                                <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
-                                <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                                <div class="co-answer-right">
+                                    <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                                    <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                                </div>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -285,29 +290,33 @@ function co_quiz_questions_meta_box($post) {
                 }
                 $question.find('.co-new-answers-list').append(`
                     <div class="co-answer">
-                        <div class="co-formatting-toolbar">
-                            <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                            <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                            <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                            <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                        <div class="co-answer-left">
+                            <div class="co-formatting-toolbar">
+                                <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                            </div>
+                            <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"></div>
+                            <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                         </div>
-                        <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"></textarea>
-                        <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
-                        <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                        <div class="co-answer-right">
+                            <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][guess]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                            <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                        </div>
                     </div>
                 `);
-                // Инициализация авто-ресайза для нового текстового поля
-                $question.find('.co-answer-text:last').each(adjustTextareaHeight);
+                initContentEditable($question.find('.co-answer-text:last'));
             });
 
             // Удаление ответа
             $(document).on('click', '.co-remove-new-answer', function() {
-                $(this).parent().remove();
+                $(this).closest('.co-answer').remove();
             });
 
             // Удаление нового вопроса
             $(document).on('click', '.co-remove-new-question', function() {
-                $(this).parent().remove();
+                $(this).closest('.co-new-question').remove();
                 questionIndex--;
             });
 
@@ -316,40 +325,63 @@ function co_quiz_questions_meta_box($post) {
                 toggleNewAnswersContainer($(this).closest('.co-new-question'));
             });
 
-            // Форматирование текста ответа
-            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
-                let $input = $(this).closest('.co-answer').find('.co-answer-text');
-                let format = $(this).data('format');
-                let start = $input[0].selectionStart;
-                let end = $input[0].selectionEnd;
-                let text = $input.val();
-                let selectedText = text.substring(start, end);
-                
-                if (format === 'br') {
-                    let newText = text.substring(0, start) + '<br>' + text.substring(end);
-                    $input.val(newText);
-                } else {
-                    if (start === end) {
-                        return; // Ничего не выбрано
-                    }
-                    let tag = format === 'bold' ? 'b' : format === 'italic' ? 'i' : 'u';
-                    let newText = text.substring(0, start) + `<${tag}>${selectedText}</${tag}>` + text.substring(end);
-                    $input.val(newText);
+            // Инициализация contenteditable
+            function initContentEditable($element) {
+                let $hiddenTextarea = $element.siblings('.co-answer-text-hidden');
+                $element.on('input', function() {
+                    $hiddenTextarea.val($element.html());
+                    adjustContentEditableHeight($element[0]);
+                });
+                // Плейсхолдер
+                if ($element.text().trim() === '') {
+                    $element.addClass('empty');
                 }
-                $input.focus();
-                console.log(`Applied ${format} formatting: input_value=`, $input.val());
-                adjustTextareaHeight.call($input[0]); // Пересчет высоты после форматирования
-            });
-
-            // Авто-ресайз для textarea
-            function adjustTextareaHeight() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
+                $element.on('focus', function() {
+                    if ($element.hasClass('empty')) {
+                        $element.text('');
+                        $element.removeClass('empty');
+                    }
+                });
+                $element.on('blur', function() {
+                    if ($element.text().trim() === '') {
+                        $element.addClass('empty');
+                    }
+                    $hiddenTextarea.val($element.html());
+                });
+                adjustContentEditableHeight($element[0]);
             }
 
-            // Привязка авто-ресайза к существующим textarea
-            $('.co-answer-text').each(adjustTextareaHeight);
-            $(document).on('input', '.co-answer-text', adjustTextareaHeight);
+            // Авто-ресайз для contenteditable
+            function adjustContentEditableHeight(element) {
+                element.style.height = 'auto';
+                const minHeight = 60;
+                const maxHeight = 150;
+                element.style.height = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight) + 'px';
+            }
+
+            // Форматирование текста
+            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
+                let $answer = $(this).closest('.co-answer');
+                let $contentEditable = $answer.find('.co-answer-text');
+                let $hiddenTextarea = $answer.find('.co-answer-text-hidden');
+                let format = $(this).data('format');
+
+                if (format === 'br') {
+                    document.execCommand('insertHTML', false, '<br>');
+                } else {
+                    let command = format === 'bold' ? 'bold' : format === 'italic' ? 'italic' : 'underline';
+                    document.execCommand(command, false, null);
+                }
+                $hiddenTextarea.val($contentEditable.html());
+                adjustContentEditableHeight($contentEditable[0]);
+                $contentEditable.focus();
+                console.log(`Applied ${format} formatting: content=`, $contentEditable.html());
+            });
+
+            // Инициализация существующих contenteditable
+            $('.co-answer-text').each(function() {
+                initContentEditable($(this));
+            });
 
             $('.co-new-question').each(function() {
                 toggleNewAnswersContainer($(this));
@@ -384,6 +416,21 @@ function co_quiz_questions_meta_box($post) {
             height: 40px;
             margin-bottom: 5px;
         }
+        .co-answer {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .co-answer-left {
+            width: 85%;
+        }
+        .co-answer-right {
+            width: 15%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
         .co-formatting-toolbar {
             margin-bottom: 8px;
             display: flex;
@@ -394,25 +441,22 @@ function co_quiz_questions_meta_box($post) {
             font-size: 12px;
             line-height: 1;
         }
-        .co-answer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-            align-items: flex-start;
-        }
         .co-answer-text {
-            width: 85%;
-            min-height: 60px; /* Две строки по умолчанию */
-            resize: none; /* Отключаем ручной ресайз */
+            min-height: 60px;
             padding: 8px;
             border: 1px solid #ccd0d4;
             border-radius: 4px;
             font-size: 14px;
             line-height: 1.5;
+            overflow-y: auto;
+        }
+        .co-answer-text.empty:before {
+            content: attr(data-placeholder);
+            color: #777;
+            pointer-events: none;
         }
         .co-answer-weight {
-            width: 60px; /* Достаточно для 2-3 цифр */
+            width: 60px;
             padding: 8px;
             border: 1px solid #ccd0d4;
             border-radius: 4px;
@@ -420,19 +464,21 @@ function co_quiz_questions_meta_box($post) {
             text-align: center;
         }
         .co-remove-new-answer {
-            display: block;
-            margin-top: 5px;
+            width: 100%;
+            text-align: center;
         }
         @media (max-width: 600px) {
-            .co-answer-text {
-                width: 100%; /* На мобильных устройствах поле занимает всю ширину */
+            .co-answer {
+                flex-direction: column;
+            }
+            .co-answer-left, .co-answer-right {
+                width: 100%;
+            }
+            .co-answer-right {
+                align-items: center;
             }
             .co-answer-weight {
-                width: 50px;
-            }
-            .co-remove-new-answer {
                 width: 100%;
-                text-align: center;
             }
         }
     </style>
@@ -527,15 +573,20 @@ function co_answers_meta_box($post) {
                 <div id="co-answers-list">
                     <?php foreach ($answers as $index => $answer) : ?>
                         <div class="co-answer">
-                            <div class="co-formatting-toolbar">
-                                <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                                <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                                <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                                <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                            <div class="co-answer-left">
+                                <div class="co-formatting-toolbar">
+                                    <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                    <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                    <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                    <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                                </div>
+                                <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"><?php echo wp_kses($answer['text'], ['b' => [], 'i' => [], 'u' => [], 'br' => []]); ?></div>
+                                <textarea name="co_answers[<?php echo esc_attr($index); ?>][text]" class="co-answer-text-hidden" style="display: none;"><?php echo esc_textarea($answer['text']); ?></textarea>
                             </div>
-                            <textarea name="co_answers[<?php echo esc_attr($index); ?>][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"><?php echo esc_textarea($answer['text']); ?></textarea>
-                            <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
-                            <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                            <div class="co-answer-right">
+                                <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                                <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -622,56 +673,83 @@ function co_answers_meta_box($post) {
                 }
                 $('#co-answers-list').append(`
                     <div class="co-answer">
-                        <div class="co-formatting-toolbar">
-                            <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                            <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                            <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                            <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                        <div class="co-answer-left">
+                            <div class="co-formatting-toolbar">
+                                <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                            </div>
+                            <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"></div>
+                            <textarea name="co_answers[${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                         </div>
-                        <textarea name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"></textarea>
-                        <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
-                        <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                        <div class="co-answer-right">
+                            <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                            <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
+                        </div>
                     </div>
                 `);
-                // Инициализация авто-ресайза для нового текстового поля
-                $('#co-answers-list .co-answer-text:last').each(adjustTextareaHeight);
+                initContentEditable($('#co-answers-list .co-answer-text:last'));
                 index++;
             });
             $(document).on('click', '.co-remove-answer', function() {
-                $(this).parent().remove();
+                $(this).closest('.co-answer').remove();
                 index--;
             });
-            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
-                let $input = $(this).closest('.co-answer').find('.co-answer-text');
-                let format = $(this).data('format');
-                let start = $input[0].selectionStart;
-                let end = $input[0].selectionEnd;
-                let text = $input.val();
-                let selectedText = text.substring(start, end);
-                
-                if (format === 'br') {
-                    let newText = text.substring(0, start) + '<br>' + text.substring(end);
-                    $input.val(newText);
-                } else {
-                    if (start === end) {
-                        return; // Ничего не выбрано
-                    }
-                    let tag = format === 'bold' ? 'b' : format === 'italic' ? 'i' : 'u';
-                    let newText = text.substring(0, start) + `<${tag}>${selectedText}</${tag}>` + text.substring(end);
-                    $input.val(newText);
+            // Инициализация contenteditable
+            function initContentEditable($element) {
+                let $hiddenTextarea = $element.siblings('.co-answer-text-hidden');
+                $element.on('input', function() {
+                    $hiddenTextarea.val($element.html());
+                    adjustContentEditableHeight($element[0]);
+                });
+                // Плейсхолдер
+                if ($element.text().trim() === '') {
+                    $element.addClass('empty');
                 }
-                $input.focus();
-                console.log(`Applied ${format} formatting: input_value=`, $input.val());
-                adjustTextareaHeight.call($input[0]); // Пересчет высоты после форматирования
-            });
-            // Авто-ресайз для textarea
-            function adjustTextareaHeight() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
+                $element.on('focus', function() {
+                    if ($element.hasClass('empty')) {
+                        $element.text('');
+                        $element.removeClass('empty');
+                    }
+                });
+                $element.on('blur', function() {
+                    if ($element.text().trim() === '') {
+                        $element.addClass('empty');
+                    }
+                    $hiddenTextarea.val($element.html());
+                });
+                adjustContentEditableHeight($element[0]);
             }
-            // Привязка авто-ресайза к существующим textarea
-            $('.co-answer-text').each(adjustTextareaHeight);
-            $(document).on('input', '.co-answer-text', adjustTextareaHeight);
+            // Авто-ресайз для contenteditable
+            function adjustContentEditableHeight(element) {
+                element.style.height = 'auto';
+                const minHeight = 60;
+                const maxHeight = 150;
+                element.style.height = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight) + 'px';
+            }
+            // Форматирование текста
+            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
+                let $answer = $(this).closest('.co-answer');
+                let $contentEditable = $answer.find('.co-answer-text');
+                let $hiddenTextarea = $answer.find('.co-answer-text-hidden');
+                let format = $(this).data('format');
+
+                if (format === 'br') {
+                    document.execCommand('insertHTML', false, '<br>');
+                } else {
+                    let command = format === 'bold' ? 'bold' : format === 'italic' ? 'italic' : 'underline';
+                    document.execCommand(command, false, null);
+                }
+                $hiddenTextarea.val($contentEditable.html());
+                adjustContentEditableHeight($contentEditable[0]);
+                $contentEditable.focus();
+                console.log(`Applied ${format} formatting: content=`, $contentEditable.html());
+            });
+            // Инициализация существующих contenteditable
+            $('.co-answer-text').each(function() {
+                initContentEditable($(this));
+            });
             toggleAnswersContainer();
             console.log('Initial toggleAnswersContainer called');
         });
@@ -689,23 +767,35 @@ function co_answers_meta_box($post) {
         }
         .co-answer {
             display: flex;
-            flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 15px;
-            align-items: flex-start;
+        }
+        .co-answer-left {
+            width: 85%;
+        }
+        .co-answer-right {
+            width: 15%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
         }
         .co-answer-text {
-            width: 85%;
-            min-height: 60px; /* Две строки по умолчанию */
-            resize: none; /* Отключаем ручной ресайз */
+            min-height: 60px;
             padding: 8px;
             border: 1px solid #ccd0d4;
             border-radius: 4px;
             font-size: 14px;
             line-height: 1.5;
+            overflow-y: auto;
+        }
+        .co-answer-text.empty:before {
+            content: attr(data-placeholder);
+            color: #777;
+            pointer-events: none;
         }
         .co-answer-weight {
-            width: 60px; /* Достаточно для 2-3 цифр */
+            width: 60px;
             padding: 8px;
             border: 1px solid #ccd0d4;
             border-radius: 4px;
@@ -713,19 +803,21 @@ function co_answers_meta_box($post) {
             text-align: center;
         }
         .co-remove-answer {
-            display: block;
-            margin-top: 5px;
+            width: 100%;
+            text-align: center;
         }
         @media (max-width: 600px) {
-            .co-answer-text {
-                width: 100%; /* На мобильных устройствах поле занимает всю ширину */
+            .co-answer {
+                flex-direction: column;
+            }
+            .co-answer-left, .co-answer-right {
+                width: 100%;
+            }
+            .co-answer-right {
+                align-items: center;
             }
             .co-answer-weight {
-                width: 50px;
-            }
-            .co-remove-answer {
                 width: 100%;
-                text-align: center;
             }
         }
     </style>
