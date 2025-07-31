@@ -115,7 +115,13 @@ function co_quiz_questions_meta_box($post) {
                         <div class="co-new-answers-list">
                             <?php foreach ($answers as $ans_index => $answer) : ?>
                             <div class="co-answer">
-                                <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                                <div class="co-formatting-toolbar">
+                                    <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                    <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                    <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                    <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                                </div>
+                                <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
                                 <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
                                 <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                             </div>
@@ -279,7 +285,13 @@ function co_quiz_questions_meta_box($post) {
                 }
                 $question.find('.co-new-answers-list').append(`
                     <div class="co-answer">
-                        <input type="text" name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                        <div class="co-formatting-toolbar">
+                            <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                            <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                            <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                            <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                        </div>
+                        <input type="text" name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
                         <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
                         <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                     </div>
@@ -300,6 +312,30 @@ function co_quiz_questions_meta_box($post) {
             // Переключение типа вопроса
             $(document).on('change', '.co-new-question-type', function() {
                 toggleNewAnswersContainer($(this).closest('.co-new-question'));
+            });
+
+            // Форматирование текста ответа
+            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
+                let $input = $(this).closest('.co-answer').find('.co-answer-text');
+                let format = $(this).data('format');
+                let start = $input[0].selectionStart;
+                let end = $input[0].selectionEnd;
+                let text = $input.val();
+                let selectedText = text.substring(start, end);
+                
+                if (format === 'br') {
+                    let newText = text.substring(0, start) + '<br>' + text.substring(end);
+                    $input.val(newText);
+                } else {
+                    if (start === end) {
+                        return; // Ничего не выбрано
+                    }
+                    let tag = format === 'bold' ? 'b' : format === 'italic' ? 'i' : 'u';
+                    let newText = text.substring(0, start) + `<${tag}>${selectedText}</${tag}>` + text.substring(end);
+                    $input.val(newText);
+                }
+                $input.focus();
+                console.log(`Applied ${format} formatting: input_value=`, $input.val());
             });
 
             $('.co-new-question').each(function() {
@@ -334,6 +370,16 @@ function co_quiz_questions_meta_box($post) {
             background: #f0f0f0;
             height: 40px;
             margin-bottom: 5px;
+        }
+        .co-formatting-toolbar {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        .co-formatting-toolbar button {
+            padding: 5px 10px;
+            font-size: 12px;
+            line-height: 1;
         }
     </style>
     <?php
@@ -427,7 +473,13 @@ function co_answers_meta_box($post) {
                 <div id="co-answers-list">
                     <?php foreach ($answers as $index => $answer) : ?>
                         <div class="co-answer">
-                            <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                            <div class="co-formatting-toolbar">
+                                <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                                <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                                <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                                <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                            </div>
+                            <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
                             <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
                             <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                         </div>
@@ -516,7 +568,13 @@ function co_answers_meta_box($post) {
                 }
                 $('#co-answers-list').append(`
                     <div class="co-answer">
-                        <input type="text" name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" />
+                        <div class="co-formatting-toolbar">
+                            <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
+                            <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
+                            <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
+                            <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                        </div>
+                        <input type="text" name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
                         <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
                         <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                     </div>
@@ -527,10 +585,44 @@ function co_answers_meta_box($post) {
                 $(this).parent().remove();
                 index--;
             });
+            $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
+                let $input = $(this).closest('.co-answer').find('.co-answer-text');
+                let format = $(this).data('format');
+                let start = $input[0].selectionStart;
+                let end = $input[0].selectionEnd;
+                let text = $input.val();
+                let selectedText = text.substring(start, end);
+                
+                if (format === 'br') {
+                    let newText = text.substring(0, start) + '<br>' + text.substring(end);
+                    $input.val(newText);
+                } else {
+                    if (start === end) {
+                        return; // Ничего не выбрано
+                    }
+                    let tag = format === 'bold' ? 'b' : format === 'italic' ? 'i' : 'u';
+                    let newText = text.substring(0, start) + `<${tag}>${selectedText}</${tag}>` + text.substring(end);
+                    $input.val(newText);
+                }
+                $input.focus();
+                console.log(`Applied ${format} formatting: input_value=`, $input.val());
+            });
             toggleAnswersContainer();
             console.log('Initial toggleAnswersContainer called');
         });
     </script>
+    <style>
+        .co-formatting-toolbar {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        .co-formatting-toolbar button {
+            padding: 5px 10px;
+            font-size: 12px;
+            line-height: 1;
+        }
+    </style>
     <?php
 }
 
@@ -575,13 +667,14 @@ function co_save_question($post_id) {
         delete_post_meta($post_id, '_co_numeric_answers');
         delete_post_meta($post_id, '_co_numeric_count');
         if (isset($_POST['co_answers']) && is_array($_POST['co_answers']) && $_POST['co_question_type'] !== 'text') {
+            $allowed_tags = ['b' => [], 'i' => [], 'u' => [], 'br' => []];
             $answers = [];
             foreach ($_POST['co_answers'] as $index => $answer) {
                 if (!isset($answer['text'], $answer['weight']) || empty(trim($answer['text']))) {
                     continue;
                 }
                 $answers[$index] = [
-                    'text' => sanitize_text_field($answer['text']),
+                    'text' => wp_kses($answer['text'], $allowed_tags),
                     'weight' => intval($answer['weight']),
                 ];
             }
@@ -615,6 +708,7 @@ function co_save_quiz($post_id) {
         delete_post_meta($post_id, '_co_questions');
     }
     if (isset($_POST['co_new_questions']) && is_array($_POST['co_new_questions'])) {
+        $allowed_tags = ['b' => [], 'i' => [], 'u' => [], 'br' => []];
         $new_question_ids = [];
         foreach ($_POST['co_new_questions'] as $new_question) {
             if (empty($new_question['title'])) {
@@ -644,7 +738,7 @@ function co_save_quiz($post_id) {
                             continue;
                         }
                         $answers[$index] = [
-                            'text' => sanitize_text_field($answer['text']),
+                            'text' => wp_kses($answer['text'], $allowed_tags),
                             'weight' => intval($answer['weight']),
                         ];
                     }

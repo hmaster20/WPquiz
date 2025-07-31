@@ -76,7 +76,7 @@ class Quiz {
                     return `
                         <label class="co-numeric-answer">
                             <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
-                            <span>${answer.text}</span>
+                            <span>${jQuery('<div/>').html(answer.text).html()}</span>
                         </label>
                     `;
                 }).join('') + `</div>` :
@@ -93,7 +93,7 @@ class Quiz {
                     return `
                         <label class="co-single-choice-answer${isNumeric ? ' co-numeric-answer' : ''}">
                             <input type="radio" name="co_answer_${question.id}" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
-                            <span>${answer.text}</span>
+                            <span>${jQuery('<div/>').html(answer.text).html()}</span>
                         </label>
                     `;
                 }).join('') + `</div>` :
@@ -109,7 +109,7 @@ class Quiz {
                     return `
                         <label class="co-multiple-choice-answer">
                             <input type="checkbox" name="co_answer_${question.id}[]" value="${ansIndex}" ${question.required ? 'required' : ''} ${isChecked}>
-                            <span>${answer.text}</span>
+                            <span>${jQuery('<div/>').html(answer.text).html()}</span>
                         </label>
                     `;
                 }).join('') :

@@ -145,6 +145,30 @@
     height: 18px;
 }
 
+/* Стили для форматированного текста в ответах */
+.co-answer-options label span {
+    display: inline-block;
+    line-height: 1.5;
+}
+
+.co-answer-options label span b {
+    font-weight: 700;
+}
+
+.co-answer-options label span i {
+    font-style: italic;
+}
+
+.co-answer-options label span u {
+    text-decoration: underline;
+}
+
+.co-answer-options label span br {
+    display: block;
+    content: "";
+    margin-top: 8px;
+}
+
 /* Стили для компактного горизонтального размещения */
 .co-answer-options.co-compact-layout {
     flex-direction: row; /* Горизонтальное расположение */
@@ -325,6 +349,29 @@
     background: #2c5282;
 }
 
+/* Стили для панели форматирования в админке */
+.co-formatting-toolbar {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.co-formatting-toolbar button {
+    padding: 5px 10px;
+    font-size: 12px;
+    line-height: 1;
+    background: #e2e8f0;
+    color: #2d3748;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.co-formatting-toolbar button:hover {
+    background: #cbd5e0;
+}
+
 /* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
     .co-quiz-container {
@@ -342,6 +389,10 @@
     .co-answer-options label {
         font-size: 0.95rem;
         padding: 10px;
+    }
+
+    .co-answer-options label span {
+        font-size: 0.9rem;
     }
 
     .co-quiz-navigation {
@@ -409,5 +460,10 @@
     .co-answer-options.co-compact-layout label {
         min-width: 40px; /* Уменьшенная минимальная ширина для мобильных */
         font-size: 0.85rem;
+    }
+
+    .co-formatting-toolbar button {
+        padding: 4px 8px;
+        font-size: 11px;
     }
 }
