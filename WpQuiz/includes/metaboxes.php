@@ -348,6 +348,29 @@ function co_quiz_questions_meta_box($post) {
                     }
                     $hiddenTextarea.val($element.html());
                 });
+                // Обработка нажатия Enter
+                $element.on('keydown', function(e) {
+                    if (e.keyCode === 13) {
+                        e.preventDefault();
+                        let sel = window.getSelection();
+                        let range = sel.getRangeAt(0);
+                        let isAtEnd = false;
+                        if (range.collapsed) {
+                            let container = range.startContainer;
+                            let offset = range.startOffset;
+                            if (container.nodeType === Node.TEXT_NODE) {
+                                isAtEnd = offset === container.length;
+                            } else if (container.nodeType === Node.ELEMENT_NODE) {
+                                isAtEnd = offset === container.childNodes.length;
+                            }
+                        }
+                        let htmlToInsert = isAtEnd ? '<br><br>' : '<br>';
+                        document.execCommand('insertHTML', false, htmlToInsert);
+                        $hiddenTextarea.val($element.html());
+                        adjustContentEditableHeight(this);
+                        console.log(`Enter pressed, inserted ${htmlToInsert}: content=`, $element.html());
+                    }
+                });
                 adjustContentEditableHeight($element[0]);
             }
 
@@ -718,6 +741,29 @@ function co_answers_meta_box($post) {
                         $element.addClass('empty');
                     }
                     $hiddenTextarea.val($element.html());
+                });
+                // Обработка нажатия Enter
+                $element.on('keydown', function(e) {
+                    if (e.keyCode === 13) {
+                        e.preventDefault();
+                        let sel = window.getSelection();
+                        let range = sel.getRangeAt(0);
+                        let isAtEnd = false;
+                        if (range.collapsed) {
+                            let container = range.startContainer;
+                            let offset = range.startOffset;
+                            if (container.nodeType === Node.TEXT_NODE) {
+                                isAtEnd = offset === container.length;
+                            } else if (container.nodeType === Node.ELEMENT_NODE) {
+                                isAtEnd = offset === container.childNodes.length;
+                            }
+                        }
+                        let htmlToInsert = isAtEnd ? '<br><br>' : '<br>';
+                        document.execCommand('insertHTML', false, htmlToInsert);
+                        $hiddenTextarea.val($element.html());
+                        adjustContentEditableHeight(this);
+                        console.log(`Enter pressed, inserted ${htmlToInsert}: content=`, $element.html());
+                    }
                 });
                 adjustContentEditableHeight($element[0]);
             }
