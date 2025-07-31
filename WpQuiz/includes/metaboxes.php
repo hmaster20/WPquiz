@@ -121,8 +121,8 @@ function co_quiz_questions_meta_box($post) {
                                     <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
                                     <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
                                 </div>
-                                <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
-                                <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                                <textarea name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"><?php echo esc_textarea($answer['text']); ?></textarea>
+                                <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                                 <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                             </div>
                             <?php endforeach; ?>
@@ -291,11 +291,13 @@ function co_quiz_questions_meta_box($post) {
                             <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
                             <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
                         </div>
-                        <input type="text" name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
-                        <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                        <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"></textarea>
+                        <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                         <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                     </div>
                 `);
+                // Инициализация авто-ресайза для нового текстового поля
+                $question.find('.co-answer-text:last').each(adjustTextareaHeight);
             });
 
             // Удаление ответа
@@ -336,7 +338,18 @@ function co_quiz_questions_meta_box($post) {
                 }
                 $input.focus();
                 console.log(`Applied ${format} formatting: input_value=`, $input.val());
+                adjustTextareaHeight.call($input[0]); // Пересчет высоты после форматирования
             });
+
+            // Авто-ресайз для textarea
+            function adjustTextareaHeight() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            }
+
+            // Привязка авто-ресайза к существующим textarea
+            $('.co-answer-text').each(adjustTextareaHeight);
+            $(document).on('input', '.co-answer-text', adjustTextareaHeight);
 
             $('.co-new-question').each(function() {
                 toggleNewAnswersContainer($(this));
@@ -380,6 +393,47 @@ function co_quiz_questions_meta_box($post) {
             padding: 5px 10px;
             font-size: 12px;
             line-height: 1;
+        }
+        .co-answer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+        .co-answer-text {
+            width: 85%;
+            min-height: 60px; /* Две строки по умолчанию */
+            resize: none; /* Отключаем ручной ресайз */
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .co-answer-weight {
+            width: 60px; /* Достаточно для 2-3 цифр */
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .co-remove-new-answer {
+            display: block;
+            margin-top: 5px;
+        }
+        @media (max-width: 600px) {
+            .co-answer-text {
+                width: 100%; /* На мобильных устройствах поле занимает всю ширину */
+            }
+            .co-answer-weight {
+                width: 50px;
+            }
+            .co-remove-new-answer {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
     <?php
@@ -479,8 +533,8 @@ function co_answers_meta_box($post) {
                                 <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
                                 <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
                             </div>
-                            <input type="text" name="co_answers[<?php echo esc_attr($index); ?>][text]" value="<?php echo esc_attr($answer['text']); ?>" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
-                            <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                            <textarea name="co_answers[<?php echo esc_attr($index); ?>][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"><?php echo esc_textarea($answer['text']); ?></textarea>
+                            <input type="number" name="co_answers[<?php echo esc_attr($index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                             <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                         </div>
                     <?php endforeach; ?>
@@ -574,11 +628,13 @@ function co_answers_meta_box($post) {
                             <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
                             <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
                         </div>
-                        <input type="text" name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text" />
-                        <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" />
+                        <textarea name="co_answers[${index}][text]" placeholder="<?php _e('Answer text', 'career-orientation'); ?>" class="co-answer-text"></textarea>
+                        <input type="number" name="co_answers[${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
                         <button type="button" class="button co-remove-answer"><?php _e('Remove', 'career-orientation'); ?></button>
                     </div>
                 `);
+                // Инициализация авто-ресайза для нового текстового поля
+                $('#co-answers-list .co-answer-text:last').each(adjustTextareaHeight);
                 index++;
             });
             $(document).on('click', '.co-remove-answer', function() {
@@ -606,7 +662,16 @@ function co_answers_meta_box($post) {
                 }
                 $input.focus();
                 console.log(`Applied ${format} formatting: input_value=`, $input.val());
+                adjustTextareaHeight.call($input[0]); // Пересчет высоты после форматирования
             });
+            // Авто-ресайз для textarea
+            function adjustTextareaHeight() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            }
+            // Привязка авто-ресайза к существующим textarea
+            $('.co-answer-text').each(adjustTextareaHeight);
+            $(document).on('input', '.co-answer-text', adjustTextareaHeight);
             toggleAnswersContainer();
             console.log('Initial toggleAnswersContainer called');
         });
@@ -621,6 +686,47 @@ function co_answers_meta_box($post) {
             padding: 5px 10px;
             font-size: 12px;
             line-height: 1;
+        }
+        .co-answer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+        .co-answer-text {
+            width: 85%;
+            min-height: 60px; /* Две строки по умолчанию */
+            resize: none; /* Отключаем ручной ресайз */
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .co-answer-weight {
+            width: 60px; /* Достаточно для 2-3 цифр */
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .co-remove-answer {
+            display: block;
+            margin-top: 5px;
+        }
+        @media (max-width: 600px) {
+            .co-answer-text {
+                width: 100%; /* На мобильных устройствах поле занимает всю ширину */
+            }
+            .co-answer-weight {
+                width: 50px;
+            }
+            .co-remove-answer {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
     <?php
