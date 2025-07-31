@@ -146,13 +146,16 @@ function co_import_export_page() {
     ?>
     <div class="wrap">
         <h1><?php _e('Import/Export Questions', 'career-orientation'); ?></h1>
-        <p><?php _e('Export questions to CSV or import questions from a CSV file.', 'career-orientation'); ?></p>
-        <h2><?php _e('Export Questions', 'career-orientation'); ?></h2>
+        <h2><?php _e('Описание раздела', 'career-orientation'); ?></h2>
+        <p><?php _e('Раздел «Импорт/Экспорт вопросов» позволяет экспортировать вопросы в формате CSV или импортировать вопросы из CSV-файла.', 'career-orientation'); ?></p>
+        <h3><?php _e('Экспорт вопросов', 'career-orientation'); ?></h3>
+        <p><?php _e('Нажмите кнопку «Экспортировать вопросы в CSV», чтобы скачать файл с текущими вопросами.', 'career-orientation'); ?></p>
         <p>
             <a href="<?php echo esc_url($export_url); ?>" class="button"><?php _e('Export Questions to CSV', 'career-orientation'); ?></a>
         </p>
         <p>Debug URL: <?php echo esc_html($export_url); ?></p>
-        <h2><?php _e('Import Questions', 'career-orientation'); ?></h2>
+        <h3><?php _e('Импорт вопросов', 'career-orientation'); ?></h3>
+        <p><?php _e('Выберите CSV-файл с вопросами и нажмите «Импортировать вопросы». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
         <form method="post" enctype="multipart/form-data">
             <?php wp_nonce_field('co_import_questions', 'co_import_nonce'); ?>
             <p>
@@ -164,22 +167,73 @@ function co_import_export_page() {
             </p>
         </form>
         <?php echo $message; ?>
-        <h3><?php _e('CSV Format', 'career-orientation'); ?></h3>
-        <p><?php _e('The CSV file must have the following columns:', 'career-orientation'); ?></p>
-        <ul>
-            <li><strong>title</strong>: <?php _e('Question title (required)', 'career-orientation'); ?></li>
-            <li><strong>type</strong>: <?php _e('Question type (select, multiple_choice, text)', 'career-orientation'); ?></li>
-            <li><strong>required</strong>: <?php _e('Is question required? (yes/no)', 'career-orientation'); ?></li>
-            <li><strong>rubric</strong>: <?php _e('Rubric slug (optional, comma-separated for multiple)', 'career-orientation'); ?></li>
-            <li><strong>answers</strong>: <?php _e('Answers in format "text:weight" separated by "|", e.g., "Option 1:5|Option 2:3" (optional for text type)', 'career-orientation'); ?></li>
-        </ul>
-        <p><?php _e('Example CSV:', 'career-orientation'); ?></p>
-        <pre>
-title,type,required,rubric,answers
-"What is your favorite activity?",select,yes,career-interests,"Reading:5|Sports:3|Coding:7"
-"Describe your skills",text,no,skills,
-"Which skills do you have?",multiple_choice,yes,skills,"Communication:2|Leadership:4|Analysis:3"
-        </pre>
+        <h3><?php _e('Формат CSV', 'career-orientation'); ?></h3>
+        <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th><?php _e('Колонка', 'career-orientation'); ?></th>
+                    <th><?php _e('Описание', 'career-orientation'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>title</strong></td>
+                    <td><?php _e('Заголовок вопроса (обязательно).', 'career-orientation'); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>type</strong></td>
+                    <td><?php _e('Тип вопроса: select (одиночный выбор), multiple_choice (множественный выбор), text (текстовый ввод).', 'career-orientation'); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>required</strong></td>
+                    <td><?php _e('Обязателен ли вопрос: yes (да) или no (нет).', 'career-orientation'); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>rubric</strong></td>
+                    <td><?php _e('Слаг рубрики (необязательно, для нескольких рубрик разделяйте запятыми).', 'career-orientation'); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>answers</strong></td>
+                    <td><?php _e('Ответы в формате «текст:вес», разделенные символом «|», например: «Вариант 1:5|Вариант 2:3» (необязательно для текстовых вопросов).', 'career-orientation'); ?></td>
+                </tr>
+            </tbody>
+        </table>
+        <h4><?php _e('Пример CSV', 'career-orientation'); ?></h4>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th>title</th>
+                    <th>type</th>
+                    <th>required</th>
+                    <th>rubric</th>
+                    <th>answers</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Какое ваше любимое занятие?</td>
+                    <td>select</td>
+                    <td>yes</td>
+                    <td>career-interests</td>
+                    <td>Чтение:5|Спорт:3|Программирование:7</td>
+                </tr>
+                <tr>
+                    <td>Опишите ваши навыки</td>
+                    <td>text</td>
+                    <td>no</td>
+                    <td>skills</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Какие навыки у вас есть?</td>
+                    <td>multiple_choice</td>
+                    <td>yes</td>
+                    <td>skills</td>
+                    <td>Коммуникация:2|Лидерство:4|Анализ:3</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     <?php
 }
