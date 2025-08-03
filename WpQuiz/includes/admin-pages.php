@@ -123,6 +123,26 @@ function co_import_export_page() {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
     }
     $message = '';
+    $preview_questions = [];
+    $preview_rubrics = [];
+
+    // Предварительный просмотр вопросов
+    if (isset($_POST['co_preview_questions']) && isset($_FILES['co_questions_csv'])) {
+        if (!isset($_POST['co_preview_nonce']) || !wp_verify_nonce($_POST['co_preview_nonce'], 'co_preview_questions')) {
+            $message = '<div class="error"><p>' . __('Invalid nonce for preview.', 'career-orientation') . '</p></div>';
+        } else {
+            $file = $_FILES['co_questions_csv'];
+            if ($file['type'] === 'text/csv' && $file['size'] > 0) {
+                $preview_questions = co_preview_csv($file['tmp_name'], ['title', 'type', 'required', 'rubric', 'answers', 'compact_layout']);
+                if (!$preview_questions['success']) {
+                    $message = '<div class="error"><p>' . esc_html($preview_questions['error']) . '</p></div>';
+                }
+            } else {
+                $message = '<div class="error"><p>' . __('Invalid file format or empty file for questions preview.', 'career-orientation') . '</p></div>';
+            }
+        }
+    }
+
     // Импорт вопросов
     if (isset($_POST['co_import_questions']) && isset($_FILES['co_questions_csv'])) {
         if (!isset($_POST['co_import_nonce']) || !wp_verify_nonce($_POST['co_import_nonce'], 'co_import_questions')) {
@@ -133,6 +153,9 @@ function co_import_export_page() {
                 $result = co_import_questions_from_csv($file['tmp_name']);
                 if ($result['success']) {
                     $message = '<div class="updated"><p>' . sprintf(__('Imported %d questions successfully.', 'career-orientation'), $result['imported']) . '</p></div>';
+                    if (!empty($result['errors'])) {
+                        $message .= '<div class="error"><p>' . __('Some rows failed to import. Check the log file at wp-content/co_import_errors.log for details.', 'career-orientation') . '</p></div>';
+                    }
                 } else {
                     $message = '<div class="error"><p>' . esc_html($result['error']) . '</p></div>';
                 }
@@ -141,6 +164,24 @@ function co_import_export_page() {
             }
         }
     }
+
+    // Предварительный просмотр рубрик
+    if (isset($_POST['co_preview_rubrics']) && isset($_FILES['co_rubrics_csv'])) {
+        if (!isset($_POST['co_preview_rubrics_nonce']) || !wp_verify_nonce($_POST['co_preview_rubrics_nonce'], 'co_preview_rubrics')) {
+            $message = '<div class="error"><p>' . __('Invalid nonce for rubrics preview.', 'career-orientation') . '</p></div>';
+        } else {
+            $file = $_FILES['co_rubrics_csv'];
+            if ($file['type'] === 'text/csv' && $file['size'] > 0) {
+                $preview_rubrics = co_preview_csv($file['tmp_name'], ['name', 'slug', 'description']);
+                if (!$preview_rubrics['success']) {
+                    $message = '<div class="error"><p>' . esc_html($preview_rubrics['error']) . '</p></div>';
+                }
+            } else {
+                $message = '<div class="error"><p>' . __('Invalid file format or empty file for rubrics preview.', 'career-orientation') . '</p></div>';
+            }
+        }
+    }
+
     // Импорт рубрик
     if (isset($_POST['co_import_rubrics']) && isset($_FILES['co_rubrics_csv'])) {
         if (!isset($_POST['co_import_rubrics_nonce']) || !wp_verify_nonce($_POST['co_import_rubrics_nonce'], 'co_import_rubrics')) {
@@ -151,6 +192,9 @@ function co_import_export_page() {
                 $result = co_import_rubrics_from_csv($file['tmp_name']);
                 if ($result['success']) {
                     $message = '<div class="updated"><p>' . sprintf(__('Imported %d rubrics successfully.', 'career-orientation'), $result['imported']) . '</p></div>';
+                    if (!empty($result['errors'])) {
+                        $message .= '<div class="error"><p>' . __('Some rows failed to import. Check the log file at wp-content/co_import_errors.log for details.', 'career-orientation') . '</p></div>';
+                    }
                 } else {
                     $message = '<div class="error"><p>' . esc_html($result['error']) . '</p></div>';
                 }
@@ -159,6 +203,7 @@ function co_import_export_page() {
             }
         }
     }
+
     // Формирование URL для экспорта
     $export_questions_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_questions'), 'co_export_questions_nonce');
     $export_rubrics_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_rubrics'), 'co_export_rubrics_nonce');
@@ -168,13 +213,48 @@ function co_import_export_page() {
     <div class="wrap">
         <h1><?php _e('Import/Export Questions and Rubrics', 'career-orientation'); ?></h1>
         <h2><?php _e('Описание раздела', 'career-orientation'); ?></h2>
-        <p><?php _e('Раздел «Импорт/Экспорт» позволяет экспортировать и импортировать вопросы и рубрики в формате CSV.', 'career-orientation'); ?></p>
+        <p><?php _e('Раздел «Импорт/Экспорт» позволяет экспортировать и импортировать вопросы и рубрики в формате CSV. Используйте предварительный просмотр для проверки содержимого CSV перед импортом.', 'career-orientation'); ?></p>
         
         <h3><?php _e('Экспорт вопросов', 'career-orientation'); ?></h3>
         <p><?php _e('Нажмите кнопку «Экспортировать вопросы в CSV», чтобы скачать файл с текущими вопросами.', 'career-orientation'); ?></p>
         <p>
             <a href="<?php echo esc_url($export_questions_url); ?>" class="button"><?php _e('Export Questions to CSV', 'career-orientation'); ?></a>
         </p>
+        
+        <h3><?php _e('Предварительный просмотр вопросов', 'career-orientation'); ?></h3>
+        <p><?php _e('Выберите CSV-файл с вопросами для предварительного просмотра.', 'career-orientation'); ?></p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('co_preview_questions', 'co_preview_nonce'); ?>
+            <p>
+                <label><?php _e('Select CSV File for Questions Preview:', 'career-orientation'); ?></label>
+                <input type="file" name="co_questions_csv" accept=".csv" required>
+            </p>
+            <p>
+                <input type="submit" name="co_preview_questions" class="button" value="<?php _e('Preview Questions', 'career-orientation'); ?>">
+            </p>
+        </form>
+        
+        <?php if (!empty($preview_questions['data'])) : ?>
+            <h4><?php _e('Предварительный просмотр CSV вопросов', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <?php foreach ($preview_questions['data'][0] as $key => $value) : ?>
+                            <th><?php echo esc_html($key); ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($preview_questions['data'] as $row) : ?>
+                        <tr>
+                            <?php foreach ($row as $value) : ?>
+                                <td><?php echo esc_html($value); ?></td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
         
         <h3><?php _e('Импорт вопросов', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с вопросами и нажмите «Импортировать вопросы». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
@@ -194,6 +274,41 @@ function co_import_export_page() {
         <p>
             <a href="<?php echo esc_url($export_rubrics_url); ?>" class="button"><?php _e('Export Rubrics to CSV', 'career-orientation'); ?></a>
         </p>
+        
+        <h3><?php _e('Предварительный просмотр рубрик', 'career-orientation'); ?></h3>
+        <p><?php _e('Выберите CSV-файл с рубриками для предварительного просмотра.', 'career-orientation'); ?></p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('co_preview_rubrics', 'co_preview_rubrics_nonce'); ?>
+            <p>
+                <label><?php _e('Select CSV File for Rubrics Preview:', 'career-orientation'); ?></label>
+                <input type="file" name="co_rubrics_csv" accept=".csv" required>
+            </p>
+            <p>
+                <input type="submit" name="co_preview_rubrics" class="button" value="<?php _e('Preview Rubrics', 'career-orientation'); ?>">
+            </p>
+        </form>
+        
+        <?php if (!empty($preview_rubrics['data'])) : ?>
+            <h4><?php _e('Предварительный просмотр CSV рубрик', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <?php foreach ($preview_rubrics['data'][0] as $key => $value) : ?>
+                            <th><?php echo esc_html($key); ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($preview_rubrics['data'] as $row) : ?>
+                        <tr>
+                            <?php foreach ($row as $value) : ?>
+                                <td><?php echo esc_html($value); ?></td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
         
         <h3><?php _e('Импорт рубрик', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с рубриками и нажмите «Импортировать рубрики». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
@@ -240,6 +355,10 @@ function co_import_export_page() {
                     <td><strong>answers</strong></td>
                     <td><?php _e('Ответы в формате «текст:вес», разделенные символом «|», например: «<b>Вариант 1</b>:5|<i>Вариант 2</i>:3» (необязательно для текстовых вопросов). Поддерживаются HTML-теги: &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;br&gt;.', 'career-orientation'); ?></td>
                 </tr>
+                <tr>
+                    <td><strong>compact_layout</strong></td>
+                    <td><?php _e('Компактный вид: yes (да) или no (нет).', 'career-orientation'); ?></td>
+                </tr>
             </tbody>
         </table>
         <h4><?php _e('Пример CSV для вопросов', 'career-orientation'); ?></h4>
@@ -251,6 +370,7 @@ function co_import_export_page() {
                     <th>required</th>
                     <th>rubric</th>
                     <th>answers</th>
+                    <th>compact_layout</th>
                 </tr>
             </thead>
             <tbody>
@@ -260,6 +380,7 @@ function co_import_export_page() {
                     <td>yes</td>
                     <td>career-interests</td>
                     <td>&lt;b&gt;Чтение&lt;/b&gt;:5|&lt;i&gt;Спорт&lt;/i&gt;:3|Программирование:7</td>
+                    <td>yes</td>
                 </tr>
                 <tr>
                     <td>Опишите ваши навыки</td>
@@ -267,6 +388,7 @@ function co_import_export_page() {
                     <td>no</td>
                     <td>skills</td>
                     <td></td>
+                    <td>no</td>
                 </tr>
                 <tr>
                     <td>Какие навыки у вас есть?</td>
@@ -274,6 +396,7 @@ function co_import_export_page() {
                     <td>yes</td>
                     <td>skills,interests</td>
                     <td>Коммуникация:2|&lt;b&gt;Лидерство&lt;/b&gt;:4|&lt;u&gt;Анализ&lt;/u&gt;:3</td>
+                    <td>yes</td>
                 </tr>
             </tbody>
         </table>
@@ -328,6 +451,33 @@ function co_import_export_page() {
     <?php
 }
 
+function co_preview_csv($file_path, $expected_headers) {
+    if (!file_exists($file_path)) {
+        return ['success' => false, 'error' => __('File not found.', 'career-orientation'), 'data' => []];
+    }
+
+    $file = fopen($file_path, 'r');
+    if (!$file) {
+        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation'), 'data' => []];
+    }
+
+    $header = fgetcsv($file);
+    if (!$header || array_diff($expected_headers, $header)) {
+        fclose($file);
+        return ['success' => false, 'error' => __('Invalid CSV format.', 'career-orientation'), 'data' => []];
+    }
+
+    $data = [];
+    $row_count = 0;
+    while (($row = fgetcsv($file)) !== false && $row_count < 10) { // Ограничение на 10 строк для предпросмотра
+        $data[] = array_combine($header, array_map('trim', $row));
+        $row_count++;
+    }
+
+    fclose($file);
+    return ['success' => true, 'data' => $data];
+}
+
 function co_export_questions_to_csv() {
     error_log('co_export_questions_to_csv started. GET: ' . print_r($_GET, true));
 
@@ -365,7 +515,7 @@ function co_export_questions_to_csv() {
         wp_die(__('Failed to initialize export.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
     }
 
-    if (!fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers'])) {
+    if (!fputcsv($output, ['title', 'type', 'required', 'rubric', 'answers', 'compact_layout'])) {
         error_log('Export questions failed: Error writing CSV headers.');
         fclose($output);
         wp_die(__('Failed to write CSV headers.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
@@ -385,6 +535,7 @@ function co_export_questions_to_csv() {
         foreach ($questions as $question) {
             $question_type = get_post_meta($question->ID, '_co_question_type', true) ?: 'multiple_choice';
             $required = get_post_meta($question->ID, '_co_required', true) === 'yes' ? 'yes' : 'no';
+            $compact_layout = get_post_meta($question->ID, '_co_compact_layout', true) === 'yes' ? 'yes' : 'no';
             $rubrics = wp_get_post_terms($question->ID, 'co_rubric', ['fields' => 'slugs']);
             if (is_wp_error($rubrics)) {
                 error_log('Export questions: Error fetching rubrics for question ID ' . $question->ID . ': ' . $rubrics->get_error_message());
@@ -410,6 +561,7 @@ function co_export_questions_to_csv() {
                 $required,
                 $rubric_slugs,
                 $answers_str,
+                $compact_layout,
             ])) {
                 error_log('Export questions failed: Error writing to CSV for question ID ' . $question->ID);
             }
@@ -961,35 +1113,48 @@ function co_reports_page() {
     <?php
 }
 
+function co_log_import_error($message) {
+    $log_file = WP_CONTENT_DIR . '/co_import_errors.log';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND | LOCK_EX);
+}
+
 function co_import_questions_from_csv($file_path) {
     global $wpdb;
-    $result = ['success' => false, 'imported' => 0, 'error' => ''];
+    $result = ['success' => false, 'imported' => 0, 'error' => '', 'errors' => []];
 
     if (!file_exists($file_path)) {
-        return ['success' => false, 'error' => __('File not found.', 'career-orientation')];
+        return ['success' => false, 'error' => __('File not found.', 'career-orientation'), 'errors' => []];
     }
 
     $file = fopen($file_path, 'r');
     if (!$file) {
-        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation')];
+        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation'), 'errors' => []];
     }
 
     $header = fgetcsv($file);
     if (!$header || !in_array('title', $header)) {
         fclose($file);
-        return ['success' => false, 'error' => __('Invalid CSV format.', 'career-orientation')];
+        return ['success' => false, 'error' => __('Invalid CSV format.', 'career-orientation'), 'errors' => []];
     }
 
     $imported = 0;
     $allowed_tags = ['b' => [], 'i' => [], 'u' => [], 'br' => []];
+    $row_number = 1;
+
     while (($row = fgetcsv($file)) !== false) {
+        $row_number++;
         $data = array_combine($header, array_map('trim', $row));
+        
         if (empty($data['title'])) {
+            co_log_import_error("Row $row_number: Skipping, empty title.");
+            $result['errors'][] = sprintf(__('Row %d: Empty title.', 'career-orientation'), $row_number);
             continue;
         }
 
         $question_type = in_array($data['type'], ['multiple_choice', 'single_choice', 'text']) ? $data['type'] : 'multiple_choice';
         $required = strtolower($data['required']) === 'yes' ? 'yes' : 'no';
+        $compact_layout = isset($data['compact_layout']) && strtolower($data['compact_layout']) === 'yes' ? 'yes' : 'no';
         $rubrics = !empty($data['rubric']) ? array_map('trim', explode(',', $data['rubric'])) : [];
         $answers = [];
 
@@ -1001,6 +1166,8 @@ function co_import_questions_from_csv($file_path) {
                 }
                 $parts = explode(':', $pair, 2);
                 if (count($parts) !== 2 || empty(trim($parts[0]))) {
+                    co_log_import_error("Row $row_number: Invalid answer format: $pair");
+                    $result['errors'][] = sprintf(__('Row %d: Invalid answer format: %s', 'career-orientation'), $row_number, $pair);
                     continue;
                 }
                 $answers[] = [
@@ -1011,6 +1178,8 @@ function co_import_questions_from_csv($file_path) {
         }
 
         if (count($answers) > 30 && $question_type !== 'text') {
+            co_log_import_error("Row $row_number: Too many answers (max 30).");
+            $result['errors'][] = sprintf(__('Row %d: Too many answers (max 30).', 'career-orientation'), $row_number);
             continue;
         }
 
@@ -1021,6 +1190,8 @@ function co_import_questions_from_csv($file_path) {
         ]);
 
         if (is_wp_error($question_id)) {
+            co_log_import_error("Row $row_number: Failed to insert question: " . $question_id->get_error_message());
+            $result['errors'][] = sprintf(__('Row %d: Failed to insert question: %s', 'career-orientation'), $row_number, $question_id->get_error_message());
             continue;
         }
 
@@ -1028,6 +1199,7 @@ function co_import_questions_from_csv($file_path) {
         if ($required === 'yes') {
             update_post_meta($question_id, '_co_required', 'yes');
         }
+        update_post_meta($question_id, '_co_compact_layout', $compact_layout);
         if ($question_type !== 'text' && !empty($answers)) {
             update_post_meta($question_id, '_co_answers', $answers);
         }
@@ -1036,10 +1208,13 @@ function co_import_questions_from_csv($file_path) {
             foreach ($rubrics as $rubric) {
                 $term = term_exists($rubric, 'co_rubric');
                 if (!$term) {
-                    $term = wp_insert_term($rubric, 'co_rubric');
+                    $term = wp_insert_term($rubric, 'co_rubric', ['slug' => sanitize_title($rubric)]);
                 }
                 if (!is_wp_error($term)) {
                     $valid_rubrics[] = is_array($term) ? $term['term_id'] : $term;
+                } else {
+                    co_log_import_error("Row $row_number: Failed to create rubric: $rubric, error: " . $term->get_error_message());
+                    $result['errors'][] = sprintf(__('Row %d: Failed to create rubric: %s, error: %s', 'career-orientation'), $row_number, $rubric, $term->get_error_message());
                 }
             }
             if (!empty($valid_rubrics)) {
@@ -1051,54 +1226,67 @@ function co_import_questions_from_csv($file_path) {
     }
 
     fclose($file);
-    return ['success' => true, 'imported' => $imported];
+    $result['success'] = true;
+    $result['imported'] = $imported;
+    return $result;
 }
 
 function co_import_rubrics_from_csv($file_path) {
-    $result = ['success' => false, 'imported' => 0, 'error' => ''];
+    $result = ['success' => false, 'imported' => 0, 'error' => '', 'errors' => []];
 
     if (!file_exists($file_path)) {
-        return ['success' => false, 'error' => __('File not found.', 'career-orientation')];
+        return ['success' => false, 'error' => __('File not found.', 'career-orientation'), 'errors' => []];
     }
 
     $file = fopen($file_path, 'r');
     if (!$file) {
-        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation')];
+        return ['success' => false, 'error' => __('Unable to open file.', 'career-orientation'), 'errors' => []];
     }
 
     $header = fgetcsv($file);
     if (!$header || !in_array('name', $header) || !in_array('slug', $header)) {
         fclose($file);
-        return ['success' => false, 'error' => __('Invalid CSV format for rubrics.', 'career-orientation')];
+        return ['success' => false, 'error' => __('Invalid CSV format for rubrics.', 'career-orientation'), 'errors' => []];
     }
 
     $imported = 0;
+    $row_number = 1;
+
     while (($row = fgetcsv($file)) !== false) {
+        $row_number++;
         $data = array_combine($header, array_map('trim', $row));
+        
         if (empty($data['name']) || empty($data['slug'])) {
+            co_log_import_error("Row $row_number: Skipping, empty name or slug.");
+            $result['errors'][] = sprintf(__('Row %d: Empty name or slug.', 'career-orientation'), $row_number);
             continue;
         }
 
-        $term = term_exists($data['slug'], 'co_rubric');
-        if (!$term) {
-            $term = wp_insert_term($data['name'], 'co_rubric', [
-                'slug' => sanitize_title($data['slug']),
-                'description' => isset($data['description']) ? sanitize_text_field($data['description']) : '',
-            ]);
-        } else {
-            wp_update_term($term['term_id'], 'co_rubric', [
-                'name' => $data['name'],
-                'slug' => sanitize_title($data['slug']),
-                'description' => isset($data['description']) ? sanitize_text_field($data['description']) : '',
-            ]);
+        $slug = sanitize_title($data['slug']);
+        $term = term_exists($slug, 'co_rubric');
+        if ($term) {
+            co_log_import_error("Row $row_number: Slug '$slug' already exists, skipping.");
+            $result['errors'][] = sprintf(__('Row %d: Slug %s already exists.', 'career-orientation'), $row_number, $slug);
+            continue;
         }
 
-        if (!is_wp_error($term)) {
-            $imported++;
+        $term = wp_insert_term($data['name'], 'co_rubric', [
+            'slug' => $slug,
+            'description' => isset($data['description']) ? sanitize_text_field($data['description']) : '',
+        ]);
+
+        if (is_wp_error($term)) {
+            co_log_import_error("Row $row_number: Failed to create rubric: " . $data['name'] . ", error: " . $term->get_error_message());
+            $result['errors'][] = sprintf(__('Row %d: Failed to create rubric: %s, error: %s', 'career-orientation'), $row_number, $data['name'], $term->get_error_message());
+            continue;
         }
+
+        $imported++;
     }
 
     fclose($file);
-    return ['success' => true, 'imported' => $imported];
+    $result['success'] = true;
+    $result['imported'] = $imported;
+    return $result;
 }
 ?>
