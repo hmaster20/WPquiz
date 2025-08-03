@@ -96,7 +96,7 @@ function co_overview_page() {
             <li><strong><?php _e('Rubrics', 'career-orientation'); ?></strong>: <?php _e('Назначайте рубрики вопросам в разделе "Rubrics" для классификации.', 'career-orientation'); ?></li>
             <li><strong><?php _e('Analytics', 'career-orientation'); ?></strong>: <?php _e('Просматривайте статистику ответов в разделе "Analytics" с фильтрами по категориям, рубрикам и датам.', 'career-orientation'); ?></li>
             <li><strong><?php _e('Reports', 'career-orientation'); ?></strong>: <?php _e('Анализируйте результаты пользователей в разделе "Reports" с фильтрами по пользователям, опросам и датам.', 'career-orientation'); ?></li>
-            <li><strong><?php _e('Import/Export', 'career-orientation'); ?></strong>: <?php _e('Импортируйте и экспортируйте вопросы и рубрики в формате CSV в разделе "Import/Export".', 'career-orientation'); ?></li>
+            <li><strong><?php _e('Import/Export', 'career-orientation'); ?></strong>: <?php _e('Импортируйте и экспортируйте вопросы, рубрики и категории в формате CSV в разделе "Import/Export".', 'career-orientation'); ?></li>
             <li><strong><?php _e('Dashboard', 'career-orientation'); ?></strong>: <?php _e('Просматривайте общую статистику в разделе "Dashboard".', 'career-orientation'); ?></li>
         </ul>
         <h3><?php _e('Как использовать шорткод', 'career-orientation'); ?></h3>
@@ -125,6 +125,7 @@ function co_import_export_page() {
     $message = '';
     $preview_questions = [];
     $preview_rubrics = [];
+    $preview_categories = [];
 
     // Предварительный просмотр вопросов
     if (isset($_POST['co_preview_questions']) && isset($_FILES['co_questions_csv'])) {
@@ -133,7 +134,7 @@ function co_import_export_page() {
         } else {
             $file = $_FILES['co_questions_csv'];
             if ($file['type'] === 'text/csv' && $file['size'] > 0) {
-                $preview_questions = co_preview_csv($file['tmp_name'], ['title', 'type', 'required', 'rubric', 'answers', 'compact_layout']);
+                $preview_questions = co_preview_csv($file['tmp_name'], ['title', 'type', 'required', 'rubric', 'answers', 'compact_layout'], ['title', 'type']);
                 if (!$preview_questions['success']) {
                     $message = '<div class="error"><p>' . esc_html($preview_questions['error']) . '</p></div>';
                 }
@@ -172,7 +173,7 @@ function co_import_export_page() {
         } else {
             $file = $_FILES['co_rubrics_csv'];
             if ($file['type'] === 'text/csv' && $file['size'] > 0) {
-                $preview_rubrics = co_preview_csv($file['tmp_name'], ['name', 'slug', 'description']);
+                $preview_rubrics = co_preview_csv($file['tmp_name'], ['name', 'slug', 'description'], ['name', 'slug']);
                 if (!$preview_rubrics['success']) {
                     $message = '<div class="error"><p>' . esc_html($preview_rubrics['error']) . '</p></div>';
                 }
@@ -204,16 +205,56 @@ function co_import_export_page() {
         }
     }
 
+    // Предварительный просмотр категорий
+    if (isset($_POST['co_preview_categories']) && isset($_FILES['co_categories_csv'])) {
+        if (!isset($_POST['co_preview_categories_nonce']) || !wp_verify_nonce($_POST['co_preview_categories_nonce'], 'co_preview_categories')) {
+            $message = '<div class="error"><p>' . __('Invalid nonce for categories preview.', 'career-orientation') . '</p></div>';
+        } else {
+            $file = $_FILES['co_categories_csv'];
+            if ($file['type'] === 'text/csv' && $file['size'] > 0) {
+                $preview_categories = co_preview_csv($file['tmp_name'], ['name', 'slug', 'description'], ['name', 'slug']);
+                if (!$preview_categories['success']) {
+                    $message = '<div class="error"><p>' . esc_html($preview_categories['error']) . '</p></div>';
+                }
+            } else {
+                $message = '<div class="error"><p>' . __('Invalid file format or empty file for categories preview.', 'career-orientation') . '</p></div>';
+            }
+        }
+    }
+
+    // Импорт категорий
+    if (isset($_POST['co_import_categories']) && isset($_FILES['co_categories_csv'])) {
+        if (!isset($_POST['co_import_categories_nonce']) || !wp_verify_nonce($_POST['co_import_categories_nonce'], 'co_import_categories')) {
+            $message = '<div class="error"><p>' . __('Invalid nonce for categories.', 'career-orientation') . '</p></div>';
+        } else {
+            $file = $_FILES['co_categories_csv'];
+            if ($file['type'] === 'text/csv' && $file['size'] > 0) {
+                $result = co_import_categories_from_csv($file['tmp_name']);
+                if ($result['success']) {
+                    $message = '<div class="updated"><p>' . sprintf(__('Imported %d categories successfully.', 'career-orientation'), $result['imported']) . '</p></div>';
+                    if (!empty($result['errors'])) {
+                        $message .= '<div class="error"><p>' . __('Some rows failed to import. Check the log file at wp-content/co_import_errors.log for details.', 'career-orientation') . '</p></div>';
+                    }
+                } else {
+                    $message = '<div class="error"><p>' . esc_html($result['error']) . '</p></div>';
+                }
+            } else {
+                $message = '<div class="error"><p>' . __('Invalid file format or empty file for categories.', 'career-orientation') . '</p></div>';
+            }
+        }
+    }
+
     // Формирование URL для экспорта
     $export_questions_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_questions'), 'co_export_questions_nonce');
     $export_rubrics_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_rubrics'), 'co_export_rubrics_nonce');
+    $export_categories_url = wp_nonce_url(admin_url('admin-post.php?action=co_export_categories'), 'co_export_categories_nonce');
     error_log('Export questions URL: ' . $export_questions_url);
     error_log('Export rubrics URL: ' . $export_rubrics_url);
+    error_log('Export categories URL: ' . $export_categories_url);
     ?>
     <div class="wrap">
-        <h1><?php _e('Import/Export Questions and Rubrics', 'career-orientation'); ?></h1>
-        <h2><?php _e('Описание раздела', 'career-orientation'); ?></h2>
-        <p><?php _e('Раздел «Импорт/Экспорт» позволяет экспортировать и импортировать вопросы и рубрики в формате CSV. Используйте предварительный просмотр для проверки содержимого CSV перед импортом.', 'career-orientation'); ?></p>
+        <h1><?php _e('Import/Export Questions, Rubrics, and Categories', 'career-orientation'); ?></h1>
+        <p><?php _e('Раздел «Импорт/Экспорт» позволяет экспортировать и импортировать вопросы, рубрики и категории в формате CSV. Используйте предварительный просмотр для проверки содержимого CSV перед импортом.', 'career-orientation'); ?></p>
         
         <h3><?php _e('Экспорт вопросов', 'career-orientation'); ?></h3>
         <p><?php _e('Нажмите кнопку «Экспортировать вопросы в CSV», чтобы скачать файл с текущими вопросами.', 'career-orientation'); ?></p>
@@ -322,136 +363,259 @@ function co_import_export_page() {
                 <input type="submit" name="co_import_rubrics" class="button button-primary" value="<?php _e('Import Rubrics', 'career-orientation'); ?>">
             </p>
         </form>
+
+        <h3><?php _e('Экспорт категорий', 'career-orientation'); ?></h3>
+        <p><?php _e('Нажмите кнопку «Экспортировать категории в CSV», чтобы скачать файл с текущими категориями.', 'career-orientation'); ?></p>
+        <p>
+            <a href="<?php echo esc_url($export_categories_url); ?>" class="button"><?php _e('Export Categories to CSV', 'career-orientation'); ?></a>
+        </p>
+        
+        <h3><?php _e('Предварительный просмотр категорий', 'career-orientation'); ?></h3>
+        <p><?php _e('Выберите CSV-файл с категориями для предварительного просмотра.', 'career-orientation'); ?></p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('co_preview_categories', 'co_preview_categories_nonce'); ?>
+            <p>
+                <label><?php _e('Select CSV File for Categories Preview:', 'career-orientation'); ?></label>
+                <input type="file" name="co_categories_csv" accept=".csv" required>
+            </p>
+            <p>
+                <input type="submit" name="co_preview_categories" class="button" value="<?php _e('Preview Categories', 'career-orientation'); ?>">
+            </p>
+        </form>
+        
+        <?php if (!empty($preview_categories['data'])) : ?>
+            <h4><?php _e('Предварительный просмотр CSV категорий', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <?php foreach ($preview_categories['data'][0] as $key => $value) : ?>
+                            <th><?php echo esc_html($key); ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($preview_categories['data'] as $row) : ?>
+                        <tr>
+                            <?php foreach ($row as $value) : ?>
+                                <td><?php echo esc_html($value); ?></td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+        
+        <h3><?php _e('Импорт категорий', 'career-orientation'); ?></h3>
+        <p><?php _e('Выберите CSV-файл с категориями и нажмите «Импортировать категории». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
+        <form method="post" enctype="multipart/form-data">
+            <?php wp_nonce_field('co_import_categories', 'co_import_categories_nonce'); ?>
+            <p>
+                <label><?php _e('Select CSV File for Categories:', 'career-orientation'); ?></label>
+                <input type="file" name="co_categories_csv" accept=".csv" required>
+            </p>
+            <p>
+                <input type="submit" name="co_import_categories" class="button button-primary" value="<?php _e('Import Categories', 'career-orientation'); ?>">
+            </p>
+        </form>
         
         <?php echo $message; ?>
         
-        <h3><?php _e('Формат CSV для вопросов', 'career-orientation'); ?></h3>
-        <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th><?php _e('Колонка', 'career-orientation'); ?></th>
-                    <th><?php _e('Описание', 'career-orientation'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>title</strong></td>
-                    <td><?php _e('Заголовок вопроса (обязательно).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>type</strong></td>
-                    <td><?php _e('Тип вопроса: multiple_choice (множественный выбор), single_choice (одиночный выбор), text (текстовый ввод).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>required</strong></td>
-                    <td><?php _e('Обязателен ли вопрос: yes (да) или no (нет).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>rubric</strong></td>
-                    <td><?php _e('Слаг рубрики (необязательно, для нескольких рубрик разделяйте запятыми).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>answers</strong></td>
-                    <td><?php _e('Ответы в формате «текст:вес», разделенные символом «|», например: «<b>Вариант 1</b>:5|<i>Вариант 2</i>:3» (необязательно для текстовых вопросов). Поддерживаются HTML-теги: &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;br&gt;.', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>compact_layout</strong></td>
-                    <td><?php _e('Компактный вид: yes (да) или no (нет).', 'career-orientation'); ?></td>
-                </tr>
-            </tbody>
-        </table>
-        <h4><?php _e('Пример CSV для вопросов', 'career-orientation'); ?></h4>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th>title</th>
-                    <th>type</th>
-                    <th>required</th>
-                    <th>rubric</th>
-                    <th>answers</th>
-                    <th>compact_layout</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Какое ваше любимое занятие?</td>
-                    <td>single_choice</td>
-                    <td>yes</td>
-                    <td>career-interests</td>
-                    <td>&lt;b&gt;Чтение&lt;/b&gt;:5|&lt;i&gt;Спорт&lt;/i&gt;:3|Программирование:7</td>
-                    <td>yes</td>
-                </tr>
-                <tr>
-                    <td>Опишите ваши навыки</td>
-                    <td>text</td>
-                    <td>no</td>
-                    <td>skills</td>
-                    <td></td>
-                    <td>no</td>
-                </tr>
-                <tr>
-                    <td>Какие навыки у вас есть?</td>
-                    <td>multiple_choice</td>
-                    <td>yes</td>
-                    <td>skills,interests</td>
-                    <td>Коммуникация:2|&lt;b&gt;Лидерство&lt;/b&gt;:4|&lt;u&gt;Анализ&lt;/u&gt;:3</td>
-                    <td>yes</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <h3><?php _e('Формат CSV для рубрик', 'career-orientation'); ?></h3>
-        <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th><?php _e('Колонка', 'career-orientation'); ?></th>
-                    <th><?php _e('Описание', 'career-orientation'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>name</strong></td>
-                    <td><?php _e('Название рубрики (обязательно).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>slug</strong></td>
-                    <td><?php _e('Слаг рубрики (обязательно, уникальный идентификатор).', 'career-orientation'); ?></td>
-                </tr>
-                <tr>
-                    <td><strong>description</strong></td>
-                    <td><?php _e('Описание рубрики (необязательно).', 'career-orientation'); ?></td>
-                </tr>
-            </tbody>
-        </table>
-        <h4><?php _e('Пример CSV для рубрик', 'career-orientation'); ?></h4>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th>name</th>
-                    <th>slug</th>
-                    <th>description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Карьерные интересы</td>
-                    <td>career-interests</td>
-                    <td>Рубрика для вопросов о профессиональных интересах</td>
-                </tr>
-                <tr>
-                    <td>Навыки</td>
-                    <td>skills</td>
-                    <td>Рубрика для вопросов о навыках</td>
-                </tr>
-            </tbody>
-        </table>
+        <h2 class="co-help-title"><?php _e('Справочная информация', 'career-orientation'); ?> <span class="co-toggle-help">[<?php _e('Развернуть', 'career-orientation'); ?>]</span></h2>
+        <div class="co-help-container" style="display: none;">
+            <h3><?php _e('Формат CSV для вопросов', 'career-orientation'); ?></h3>
+            <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Колонка', 'career-orientation'); ?></th>
+                        <th><?php _e('Описание', 'career-orientation'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>title</strong></td>
+                        <td><?php _e('Заголовок вопроса (обязательно).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>type</strong></td>
+                        <td><?php _e('Тип вопроса: multiple_choice (множественный выбор), single_choice (одиночный выбор), text (текстовый ввод).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>required</strong></td>
+                        <td><?php _e('Обязателен ли вопрос: yes (да) или no (нет).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>rubric</strong></td>
+                        <td><?php _e('Слаг рубрики (необязательно, для нескольких рубрик разделяйте запятыми).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>answers</strong></td>
+                        <td><?php _e('Ответы в формате «текст:вес», разделенные символом «|», например: «<b>Вариант 1</b>:5|<i>Вариант 2</i>:3» (необязательно для текстовых вопросов). Поддерживаются HTML-теги: &lt;b&gt;, &lt;i&gt;, &lt;u&gt;, &lt;br&gt;.', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>compact_layout</strong></td>
+                        <td><?php _e('Компактный вид: yes (да) или no (нет).', 'career-orientation'); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4><?php _e('Пример CSV для вопросов', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>title</th>
+                        <th>type</th>
+                        <th>required</th>
+                        <th>rubric</th>
+                        <th>answers</th>
+                        <th>compact_layout</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Какое ваше любимое занятие?</td>
+                        <td>single_choice</td>
+                        <td>yes</td>
+                        <td>career-interests</td>
+                        <td>&lt;b&gt;Чтение&lt;/b&gt;:5|&lt;i&gt;Спорт&lt;/i&gt;:3|Программирование:7</td>
+                        <td>yes</td>
+                    </tr>
+                    <tr>
+                        <td>Опишите ваши навыки</td>
+                        <td>text</td>
+                        <td>no</td>
+                        <td>skills</td>
+                        <td></td>
+                        <td>no</td>
+                    </tr>
+                    <tr>
+                        <td>Какие навыки у вас есть?</td>
+                        <td>multiple_choice</td>
+                        <td>yes</td>
+                        <td>skills,interests</td>
+                        <td>Коммуникация:2|&lt;b&gt;Лидерство&lt;/b&gt;:4|&lt;u&gt;Анализ&lt;/u&gt;:3</td>
+                        <td>yes</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3><?php _e('Формат CSV для рубрик', 'career-orientation'); ?></h3>
+            <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Колонка', 'career-orientation'); ?></th>
+                        <th><?php _e('Описание', 'career-orientation'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>name</strong></td>
+                        <td><?php _e('Название рубрики (обязательно).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>slug</strong></td>
+                        <td><?php _e('Слаг рубрики (обязательно, уникальный идентификатор).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>description</strong></td>
+                        <td><?php _e('Описание рубрики (необязательно).', 'career-orientation'); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4><?php _e('Пример CSV для рубрик', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>name</th>
+                        <th>slug</th>
+                        <th>description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Карьерные интересы</td>
+                        <td>career-interests</td>
+                        <td>Рубрика для вопросов о профессиональных интересах</td>
+                    </tr>
+                    <tr>
+                        <td>Навыки</td>
+                        <td>skills</td>
+                        <td>Рубрика для вопросов о навыках</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3><?php _e('Формат CSV для категорий', 'career-orientation'); ?></h3>
+            <h4><?php _e('Описание колонок', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('Колонка', 'career-orientation'); ?></th>
+                        <th><?php _e('Описание', 'career-orientation'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>name</strong></td>
+                        <td><?php _e('Название категории (обязательно).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>slug</strong></td>
+                        <td><?php _e('Слаг категории (обязательно, уникальный идентификатор).', 'career-orientation'); ?></td>
+                    </tr>
+                    <tr>
+                        <td><strong>description</strong></td>
+                        <td><?php _e('Описание категории (необязательно).', 'career-orientation'); ?></td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4><?php _e('Пример CSV для категорий', 'career-orientation'); ?></h4>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>name</th>
+                        <th>slug</th>
+                        <th>description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Профессиональные тесты</td>
+                        <td>professional-tests</td>
+                        <td>Категория для тестов, связанных с профессиональной ориентацией</td>
+                    </tr>
+                    <tr>
+                        <td>Личностные тесты</td>
+                        <td>personal-tests</td>
+                        <td>Категория для тестов, связанных с личностными качествами</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+    <script>
+        jQuery(document).ready(function($) {
+            $('.co-toggle-help').click(function() {
+                $('.co-help-container').slideToggle();
+                $(this).text($(this).text() === '<?php _e('Развернуть', 'career-orientation'); ?>' ? '<?php _e('Свернуть', 'career-orientation'); ?>' : '<?php _e('Развернуть', 'career-orientation'); ?>');
+            });
+        });
+    </script>
+    <style>
+        .co-toggle-help {
+            cursor: pointer;
+            color: #0073aa;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .co-toggle-help:hover {
+            text-decoration: underline;
+        }
+    </style>
     <?php
 }
 
-function co_preview_csv($file_path, $expected_headers) {
+function co_preview_csv($file_path, $expected_headers, $required_headers) {
     if (!file_exists($file_path)) {
         return ['success' => false, 'error' => __('File not found.', 'career-orientation'), 'data' => []];
     }
@@ -462,9 +626,25 @@ function co_preview_csv($file_path, $expected_headers) {
     }
 
     $header = fgetcsv($file);
-    if (!$header || array_diff($expected_headers, $header)) {
+    if (!$header) {
         fclose($file);
-        return ['success' => false, 'error' => __('Invalid CSV format.', 'career-orientation'), 'data' => []];
+        return ['success' => false, 'error' => __('Invalid CSV format: empty or invalid file.', 'career-orientation'), 'data' => []];
+    }
+
+    // Проверяем наличие всех обязательных заголовков
+    foreach ($required_headers as $req_header) {
+        if (!in_array($req_header, $header)) {
+            fclose($file);
+            return ['success' => false, 'error' => sprintf(__('Missing required header: %s.', 'career-orientation'), $req_header), 'data' => []];
+        }
+    }
+
+    // Проверяем, что все заголовки в файле входят в ожидаемые (для предотвращения лишних колонок)
+    foreach ($header as $col) {
+        if (!in_array($col, $expected_headers)) {
+            fclose($file);
+            return ['success' => false, 'error' => sprintf(__('Unexpected header: %s.', 'career-orientation'), $col), 'data' => []];
+        }
     }
 
     $data = [];
@@ -643,6 +823,76 @@ function co_export_rubrics_to_csv() {
     exit;
 }
 add_action('admin_post_co_export_rubrics', 'co_export_rubrics_to_csv');
+
+function co_export_categories_to_csv() {
+    error_log('co_export_categories_to_csv started. GET: ' . print_r($_GET, true));
+
+    $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
+    if ($action !== 'co_export_categories') {
+        error_log('Export categories skipped: Invalid action. Action: ' . $action);
+        return;
+    }
+
+    $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+    if (empty($nonce) || !wp_verify_nonce($nonce, 'co_export_categories_nonce')) {
+        error_log('Export categories failed: Invalid or missing nonce. Nonce: ' . ($nonce ?: 'not set'));
+        wp_die(__('Invalid request: Security check failed.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 403]);
+    }
+
+    if (!current_user_can('manage_options')) {
+        error_log('Export categories failed: User lacks manage_options capability.');
+        wp_die(__('You do not have sufficient permissions to perform this action.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 403]);
+    }
+
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="co_categories_export_' . date('Y-m-d_H-i-s') . '.csv"');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('X-Content-Type-Options: nosniff');
+
+    $output = fopen('php://output', 'w');
+    if ($output === false) {
+        error_log('Export categories failed: Unable to open php://output.');
+        wp_die(__('Failed to initialize export.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
+    }
+
+    if (!fputcsv($output, ['name', 'slug', 'description'])) {
+        error_log('Export categories failed: Error writing CSV headers.');
+        fclose($output);
+        wp_die(__('Failed to write CSV headers.', 'career-orientation'), __('Error', 'career-orientation'), ['response' => 500]);
+    }
+
+    $categories = get_terms([
+        'taxonomy' => 'co_category',
+        'hide_empty' => false,
+    ]);
+    error_log('Export categories: Found ' . count($categories) . ' categories.');
+
+    if (is_wp_error($categories) || empty($categories)) {
+        error_log('Export categories: No categories found or error occurred.');
+        fputcsv($output, ['No categories found']);
+    } else {
+        foreach ($categories as $category) {
+            if (!fputcsv($output, [
+                $category->name,
+                $category->slug,
+                $category->description,
+            ])) {
+                error_log('Export categories failed: Error writing to CSV for category ID ' . $category->term_id);
+            }
+        }
+    }
+
+    fclose($output);
+    error_log('Export categories completed successfully.');
+    exit;
+}
+add_action('admin_post_co_export_categories', 'co_export_categories_to_csv');
 
 function co_unique_links_page() {
     if (!current_user_can('manage_options')) {
