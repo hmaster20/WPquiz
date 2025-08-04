@@ -942,12 +942,6 @@ function co_example_categories_csv() {
 }
 add_action('admin_post_co_example_categories', 'co_example_categories_csv');
 
-function co_log_import_error($message) {
-    $log_file = WP_CONTENT_DIR . '/co_import_errors.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND | LOCK_EX);
-}
-
 function co_import_questions_from_csv($file_path) {
     global $wpdb;
     $result = ['success' => false, 'imported' => 0, 'error' => '', 'errors' => []];
