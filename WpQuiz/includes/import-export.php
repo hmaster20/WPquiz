@@ -1171,4 +1171,10 @@ function co_import_categories_from_csv($file_path) {
     $result['imported'] = $imported;
     return $result;
 }
+
+function co_log_import_error($message) {
+    $log_file = WP_CONTENT_DIR . '/co_import_errors.log';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND | LOCK_EX);
+}
 ?>
