@@ -231,6 +231,7 @@ function co_generate_unique_link() {
 add_action('wp_ajax_co_generate_unique_link', 'co_generate_unique_link');
 
 function co_load_questions() {
+    error_log('co_load_questions received data: ' . json_encode($_POST, JSON_UNESCAPED_SLASHES));
     if (!current_user_can('manage_options')) {
         wp_send_json_error(['message' => __('Insufficient permissions', 'career-orientation')]);
         error_log('Load questions failed: Insufficient permissions');

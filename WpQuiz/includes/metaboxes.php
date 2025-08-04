@@ -47,6 +47,38 @@ function co_quiz_questions_meta_box($post) {
     wp_nonce_field('co_save_quiz', 'co_quiz_nonce');
     wp_enqueue_script('jquery-ui-dialog');
     wp_enqueue_style('wp-jquery-ui-dialog');
+    wp_enqueue_script('co_quiz_admin_script', plugin_dir_url(__FILE__) . 'co-admin.js', ['jquery', 'jquery-ui-sortable', 'jquery-ui-dialog'], '1.0', true);
+    wp_localize_script('co_quiz_admin_script', 'co_quiz_admin', [
+        'nonce' => wp_create_nonce('co_quiz_admin_nonce'),
+        'translations' => [
+            'up' => __('Up', 'career-orientation'),
+            'down' => __('Down', 'career-orientation'),
+            'remove' => __('Remove', 'career-orientation'),
+            'select_at_least_one' => __('Please select at least one question.', 'career-orientation'),
+            'no_questions_available' => __('No questions available.', 'career-orientation'),
+            'error_loading_questions' => __('Error loading questions.', 'career-orientation'),
+            'question_title_placeholder' => __('Question title', 'career-orientation'),
+            'required' => __('Required', 'career-orientation'),
+            'question_type_label' => __('Question Type:', 'career-orientation'),
+            'multiple_choice' => __('Multiple Choice', 'career-orientation'),
+            'single_choice' => __('Single Choice', 'career-orientation'),
+            'text' => __('Text', 'career-orientation'),
+            'add_answer_text' => __('Add up to 30 answers with their weights (integer values).', 'career-orientation'),
+            'compact_layout' => __('Compact Layout for Answers', 'career-orientation'),
+            'compact_layout_note' => __('(Affects answer display only)', 'career-orientation'),
+            'add_answer_button' => __('Add Answer', 'career-orientation'),
+            'remove_question_button' => __('Remove Question', 'career-orientation'),
+            'max_answers_alert' => __('Maximum 30 answers allowed.', 'career-orientation'),
+            'answer_text_placeholder' => __('Answer text', 'career-orientation'),
+            'bold_title' => __('Bold', 'career-orientation'),
+            'italic_title' => __('Italic', 'career-orientation'),
+            'underline_title' => __('Underline', 'career-orientation'),
+            'line_break_title' => __('Line Break', 'career-orientation'),
+            'remove_answer_button' => __('Remove', 'career-orientation'),
+            'weight_placeholder' => __('Weight', 'career-orientation'),
+            'text_notice' => __('Text questions allow users to enter a custom response (no weights).', 'career-orientation'),
+        ]
+    ]);
     $question_ids = get_post_meta($post->ID, '_co_questions', true) ?: [];
     $questions = get_posts([
         'post_type' => 'co_question',
@@ -110,6 +142,7 @@ function co_quiz_questions_meta_box($post) {
         jQuery(document).ready(function($) {
             console.log('co_quiz_questions_meta_box script loaded');
             let questionIndex = 0;
+            const translations = co_quiz_admin.translations;
 
             // Инициализация jQuery UI Sortable
             $('#co-questions-list').sortable({
@@ -127,27 +160,35 @@ function co_quiz_questions_meta_box($post) {
                 width: '80%',
                 maxHeight: $(window).height() * 0.8,
                 open: function() {
+                    console.log('Modal opened');
                     loadQuestions(1);
+                },
+                create: function() {
+                    console.log('Modal dialog created');
                 }
             });
 
             // Открытие модального окна
             $('#co-open-question-modal').on('click', function() {
+                console.log('Add Question button clicked');
                 $('#co-question-modal').dialog('open');
             });
 
             // Закрытие модального окна
             $('#co-close-question-modal').on('click', function() {
+                console.log('Close modal button clicked');
                 $('#co-question-modal').dialog('close');
             });
 
             // Выбор количества вопросов на странице
             $('#co-questions-per-page').on('change', function() {
+                console.log('Questions per page changed to: ' + $(this).val());
                 loadQuestions(1);
             });
 
             // Выбор всех вопросов
             $('#co-select-all-questions').on('change', function() {
+                console.log('Select all questions toggled: ' + this.checked);
                 $('#co-question-modal-list input[type="checkbox"]').prop('checked', this.checked);
             });
 
@@ -162,9 +203,9 @@ function co_quiz_questions_meta_box($post) {
                         <li class="co-question-item" data-question-id="${questionId}">
                             <span class="co-question-title">${questionText}</span>
                             <input type="hidden" name="co_questions[]" value="${questionId}">
-                            <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
-                            <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
-                            <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
+                            <button type="button" class="button co-move-up">${translations.up}</button>
+                            <button type="button" class="button co-move-down">${translations.down}</button>
+                            <button type="button" class="button co-remove-question">${translations.remove}</button>
                         </li>
                     `);
                 });
@@ -173,7 +214,7 @@ function co_quiz_questions_meta_box($post) {
                     $('#co-question-modal').dialog('close');
                     updateQuestionOrder();
                 } else {
-                    alert('<?php _e('Please select at least one question.', 'career-orientation'); ?>');
+                    alert(translations.select_at_least_one);
                 }
             });
 
@@ -185,6 +226,8 @@ function co_quiz_questions_meta_box($post) {
                     existingQuestionIds.push($(this).data('question-id'));
                 });
 
+                console.log('Loading questions: page=' + page + ', perPage=' + perPage + ', exclude=' + existingQuestionIds);
+
                 $.ajax({
                     url: ajaxurl,
                     method: 'POST',
@@ -192,15 +235,17 @@ function co_quiz_questions_meta_box($post) {
                         action: 'co_load_questions',
                         page: page,
                         per_page: perPage,
-                        exclude: existingQuestionIds
+                        exclude: existingQuestionIds,
+                        nonce: co_quiz_admin.nonce
                     },
                     success: function(response) {
+                        console.log('loadQuestions response:', response);
                         if (response.success) {
                             let questions = response.data.questions;
                             let totalPages = response.data.total_pages;
                             let html = '';
                             if (questions.length === 0) {
-                                html = '<tr><td colspan="2"><?php _e('No questions available.', 'career-orientation'); ?></td></tr>';
+                                html = '<tr><td colspan="2">' + translations.no_questions_available + '</td></tr>';
                             } else {
                                 questions.forEach(function(question) {
                                     html += `
@@ -215,12 +260,12 @@ function co_quiz_questions_meta_box($post) {
                             updatePagination(page, totalPages);
                         } else {
                             console.error('Error loading questions:', response.data);
-                            $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                            $('#co-question-modal-list').html('<tr><td colspan="2">' + translations.error_loading_questions + '</td></tr>');
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('AJAX error:', error);
-                        $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                        console.error('AJAX error:', error, xhr.responseText);
+                        $('#co-question-modal-list').html('<tr><td colspan="2">' + translations.error_loading_questions + '</td></tr>');
                     }
                 });
             }
@@ -236,6 +281,7 @@ function co_quiz_questions_meta_box($post) {
                 $('#co-question-modal-pagination').html(paginationHtml);
                 $('.co-page').on('click', function() {
                     let page = $(this).data('page');
+                    console.log('Pagination page clicked: ' + page);
                     loadQuestions(page);
                 });
             }
@@ -281,7 +327,6 @@ function co_quiz_questions_meta_box($post) {
                 $('input[name="co_questions[]"]').each(function(index) {
                     $(this).val(order[index]);
                 });
-                // Актуализация списка вопросов в модальном окне
                 loadQuestions(1);
             }
 
@@ -294,7 +339,7 @@ function co_quiz_questions_meta_box($post) {
                 if (type === 'text') {
                     answersContainer.find('.co-new-answers-list, .co-add-new-answer, .co-compact-layout').hide();
                     if (!answersContainer.find('.text-notice').length) {
-                        answersContainer.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
+                        answersContainer.append('<p class="text-notice">' + translations.text_notice + '</p>');
                     }
                 } else {
                     answersContainer.find('.text-notice').remove();
@@ -304,38 +349,37 @@ function co_quiz_questions_meta_box($post) {
 
             // Добавление нового вопроса
             $('#co-add-new-question').on('click', function() {
+                console.log('Add New Question button clicked');
                 let newIndex = questionIndex++;
                 $('#co-new-questions-list').append(`
                     <div class="co-new-question">
-                        <input type="text" name="co_new_questions[${newIndex}][title]" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
+                        <input type="text" name="co_new_questions[${newIndex}][title]" placeholder="${translations.question_title_placeholder}" />
                         <label>
                             <input type="checkbox" name="co_new_questions[${newIndex}][required]" value="yes">
-                            <?php _e('Required', 'career-orientation'); ?>
+                            ${translations.required}
                         </label>
                         <p>
-                            <label><?php _e('Question Type:', 'career-orientation'); ?></label>
+                            <label>${translations.question_type_label}</label>
                             <select name="co_new_questions[${newIndex}][type]" class="co-new-question-type">
-                                <option value="multiple_choice"><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                                <option value="single_choice"><?php _e('Single Choice', 'career-orientation'); ?></option>
-                                <option value="text"><?php _e('Text', 'career-orientation'); ?></option>
+                                <option value="multiple_choice">${translations.multiple_choice}</option>
+                                <option value="single_choice">${translations.single_choice}</option>
+                                <option value="text">${translations.text}</option>
                             </select>
                         </p>
                         <div class="co-new-answers multiple_choice">
-                            <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                            <p>${translations.add_answer_text}</p>
                             <label for="co-compact-layout-new-${newIndex}">
                                 <input type="checkbox" name="co_new_questions[${newIndex}][compact_layout]" id="co-compact-layout-new-${newIndex}" value="yes" class="co-compact-layout">
-                                <?php _e('Compact Layout for Answers', 'career-orientation'); ?>
+                                ${translations.compact_layout}
                             </label>
-                            <small><?php _e('(Affects answer display only)', 'career-orientation'); ?></small>
+                            <small>${translations.compact_layout_note}</small>
                             <div class="co-new-answers-list"></div>
-                            <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
+                            <button type="button" class="button co-add-new-answer">${translations.add_answer_button}</button>
                         </div>
-                        <button type="button" class="button co-remove-new-question"><?php _e('Remove Question', 'career-orientation'); ?></button>
+                        <button type="button" class="button co-remove-new-question">${translations.remove_question_button}</button>
                     </div>
                 `);
                 toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
-                // Актуализация списка вопросов в модальном окне
-                loadQuestions(1);
             });
 
             // Добавление ответа для нового вопроса
@@ -343,24 +387,24 @@ function co_quiz_questions_meta_box($post) {
                 let $question = $(this).closest('.co-new-question');
                 let index = $question.find('.co-answer').length;
                 if (index >= 30) {
-                    alert('<?php _e('Maximum 30 answers allowed.', 'career-orientation'); ?>');
+                    alert(translations.max_answers_alert);
                     return;
                 }
                 $question.find('.co-new-answers-list').append(`
                     <div class="co-answer">
                         <div class="co-answer-left">
                             <div class="co-formatting-toolbar">
-                                <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                                <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                                <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                                <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                                <button type="button" class="button co-format-bold" data-format="bold" title="${translations.bold_title}"><b>B</b></button>
+                                <button type="button" class="button co-format-italic" data-format="italic" title="${translations.italic_title}"><i>I</i></button>
+                                <button type="button" class="button co-format-underline" data-format="underline" title="${translations.underline_title}"><u>U</u></button>
+                                <button type="button" class="button co-format-br" data-format="br" title="${translations.line_break_title}">&#9166;</button>
                             </div>
-                            <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"></div>
+                            <div class="co-answer-text" contenteditable="true" data-placeholder="${translations.answer_text_placeholder}"></div>
                             <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                         </div>
                         <div class="co-answer-right">
-                            <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
-                            <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                            <button type="button" class="button co-remove-new-answer">${translations.remove_answer_button}</button>
+                            <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="${translations.weight_placeholder}" step="1" class="co-answer-weight" />
                         </div>
                     </div>
                 `);
@@ -376,8 +420,6 @@ function co_quiz_questions_meta_box($post) {
             $(document).on('click', '.co-remove-new-question', function() {
                 $(this).closest('.co-new-question').remove();
                 questionIndex--;
-                // Актуализация списка вопросов в модальном окне
-                loadQuestions(1);
             });
 
             // Переключение типа вопроса
