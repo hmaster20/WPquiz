@@ -45,6 +45,8 @@ add_action('add_meta_boxes_co_quiz', 'co_add_quiz_meta_boxes');
 
 function co_quiz_questions_meta_box($post) {
     wp_nonce_field('co_save_quiz', 'co_quiz_nonce');
+    wp_enqueue_script('jquery-ui-dialog');
+    wp_enqueue_style('wp-jquery-ui-dialog');
     $question_ids = get_post_meta($post->ID, '_co_questions', true) ?: [];
     $questions = get_posts([
         'post_type' => 'co_question',
@@ -52,11 +54,10 @@ function co_quiz_questions_meta_box($post) {
         'post__in' => $question_ids,
         'orderby' => 'post__in',
     ]);
-    $new_questions = get_post_meta($post->ID, '_co_new_questions', true) ?: [];
     error_log('Rendering co_quiz_questions_meta_box for post_id=' . $post->ID);
     ?>
     <div id="co-quiz-questions">
-        <h4><?php _e('Select Existing Questions', 'career-orientation'); ?></h4>
+        <h4><?php _e('Selected Questions', 'career-orientation'); ?></h4>
         <ul id="co-questions-list" class="co-sortable">
             <?php foreach ($questions as $index => $question) : ?>
             <li class="co-question-item" data-question-id="<?php echo esc_attr($question->ID); ?>">
@@ -69,121 +70,175 @@ function co_quiz_questions_meta_box($post) {
             <?php endforeach; ?>
         </ul>
         <p>
-            <select id="co-add-question-select" style="width: 100%;">
-                <option value=""><?php _e('Select a question to add', 'career-orientation'); ?></option>
-                <?php
-                $all_questions = get_posts([
-                    'post_type' => 'co_question',
-                    'posts_per_page' => -1,
-                ]);
-                foreach ($all_questions as $question) :
-                    if (!in_array($question->ID, $question_ids)) :
-                ?>
-                <option value="<?php echo esc_attr($question->ID); ?>"><?php echo esc_html($question->post_title); ?></option>
-                <?php endif; endforeach; ?>
-            </select>
-            <button type="button" class="button" id="co-add-existing-question"><?php _e('Add Question', 'career-orientation'); ?></button>
+            <button type="button" class="button" id="co-open-question-modal"><?php _e('Add Question', 'career-orientation'); ?></button>
         </p>
-        <h4><?php _e('Add New Questions', 'career-orientation'); ?></h4>
-        <div id="co-new-questions-list">
-            <?php foreach ($new_questions as $index => $new_question) : 
-                $question_type = isset($new_question['type']) ? $new_question['type'] : 'multiple_choice';
-                $answers = isset($new_question['answers']) ? $new_question['answers'] : [];
-                $compact_layout = isset($new_question['compact_layout']) ? $new_question['compact_layout'] : '';
-                ?>
-                <div class="co-new-question">
-                    <input type="text" name="co_new_questions[<?php echo esc_attr($index); ?>][title]" value="<?php echo esc_attr($new_question['title']); ?>" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
-                    <label>
-                        <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][required]" value="yes" <?php checked(isset($new_question['required']) && $new_question['required'] === 'yes'); ?>>
-                        <?php _e('Required', 'career-orientation'); ?>
-                    </label>
-                    <p>
-                        <label><?php _e('Question Type:', 'career-orientation'); ?></label>
-                        <select name="co_new_questions[<?php echo esc_attr($index); ?>][type]" class="co-new-question-type">
-                            <option value="multiple_choice" <?php selected($question_type, 'multiple_choice'); ?>><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                            <option value="single_choice" <?php selected($question_type, 'single_choice'); ?>><?php _e('Single Choice', 'career-orientation'); ?></option>
-                            <option value="text" <?php selected($question_type, 'text'); ?>><?php _e('Text', 'career-orientation'); ?></option>
-                        </select>
-                    </p>
-                    <div class="co-new-answers <?php echo esc_attr($question_type); ?>">
-                        <?php if ($question_type !== 'text') : ?>
-                        <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
-                        <label>
-                            <input type="checkbox" name="co_new_questions[<?php echo esc_attr($index); ?>][compact_layout]" value="yes" <?php checked($compact_layout, 'yes'); ?> class="co-compact-layout">
-                            <?php _e('Compact Layout', 'career-orientation'); ?>
-                        </label>
-                        <div class="co-new-answers-list">
-                            <?php foreach ($answers as $ans_index => $answer) : ?>
-                            <div class="co-answer">
-                                <div class="co-answer-left">
-                                    <div class="co-formatting-toolbar">
-                                        <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                                        <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                                        <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                                        <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
-                                    </div>
-                                    <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"><?php echo wp_kses($answer['text'], ['b' => [], 'i' => [], 'u' => [], 'br' => []]); ?></div>
-                                    <textarea name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][text]" class="co-answer-text-hidden" style="display: none;"><?php echo esc_textarea($answer['text']); ?></textarea>
-                                </div>
-                                <div class="co-answer-right">
-                                    <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
-                                    <input type="number" name="co_new_questions[<?php echo esc_attr($index); ?>][answers][<?php echo esc_attr($ans_index); ?>][weight]" value="<?php echo esc_attr($answer['weight']); ?>" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
-                        <?php else : ?>
-                        <p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>
-                        <?php endif; ?>
-                    </div>
-                    <button type="button" class="button co-remove-new-question"><?php _e('Remove Question', 'career-orientation'); ?></button>
-                </div>
-            <?php endforeach; ?>
+        <div id="co-question-modal" style="display:none;">
+            <div class="co-modal-header">
+                <h3><?php _e('Select Questions to Add', 'career-orientation'); ?></h3>
+                <p>
+                    <label for="co-questions-per-page"><?php _e('Questions per page:', 'career-orientation'); ?></label>
+                    <select id="co-questions-per-page">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </p>
+            </div>
+            <div id="co-question-modal-content">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="co-select-all-questions"></th>
+                            <th><?php _e('Question', 'career-orientation'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="co-question-modal-list"></tbody>
+                </table>
+            </div>
+            <div class="co-modal-footer">
+                <button type="button" class="button button-primary" id="co-add-selected-questions"><?php _e('Add Selected Questions', 'career-orientation'); ?></button>
+                <button type="button" class="button" id="co-close-question-modal"><?php _e('Cancel', 'career-orientation'); ?></button>
+                <div id="co-question-modal-pagination"></div>
+            </div>
         </div>
+        <h4><?php _e('Add New Questions', 'career-orientation'); ?></h4>
+        <div id="co-new-questions-list"></div>
         <button type="button" class="button" id="co-add-new-question"><?php _e('Add New Question', 'career-orientation'); ?></button>
     </div>
     <script>
         jQuery(document).ready(function($) {
             console.log('co_quiz_questions_meta_box script loaded');
-            let questionIndex = <?php echo count($new_questions); ?>;
+            let questionIndex = 0;
 
             // Инициализация jQuery UI Sortable
             $('#co-questions-list').sortable({
                 placeholder: 'co-sortable-placeholder',
                 update: function(event, ui) {
                     console.log('Questions reordered');
-                    let order = [];
-                    $('#co-questions-list .co-question-item').each(function() {
-                        order.push($(this).data('question-id'));
-                    });
-                    console.log('New question order:', order);
-                    $('input[name="co_questions[]"]').each(function(index) {
-                        $(this).val(order[index]);
-                    });
+                    updateQuestionOrder();
                 }
             }).disableSelection();
 
-            // Добавление существующего вопроса
-            $('#co-add-existing-question').on('click', function() {
-                let questionId = $('#co-add-question-select').val();
-                let questionText = $('#co-add-question-select option:selected').text();
-                if (!questionId) {
-                    alert('<?php _e('Please select a question.', 'career-orientation'); ?>');
-                    return;
+            // Инициализация модального окна
+            $('#co-question-modal').dialog({
+                autoOpen: false,
+                modal: true,
+                width: '80%',
+                maxHeight: $(window).height() * 0.8,
+                open: function() {
+                    loadQuestions(1);
                 }
-                $('#co-questions-list').append(`
-                    <li class="co-question-item" data-question-id="${questionId}">
-                        <span class="co-question-title">${questionText}</span>
-                        <input type="hidden" name="co_questions[]" value="${questionId}">
-                        <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
-                        <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
-                        <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
-                    </li>
-                `);
-                $('#co-add-question-select option[value="' + questionId + '"]').remove();
-                console.log('Added existing question:', { id: questionId, text: questionText });
             });
+
+            // Открытие модального окна
+            $('#co-open-question-modal').on('click', function() {
+                $('#co-question-modal').dialog('open');
+            });
+
+            // Закрытие модального окна
+            $('#co-close-question-modal').on('click', function() {
+                $('#co-question-modal').dialog('close');
+            });
+
+            // Выбор количества вопросов на странице
+            $('#co-questions-per-page').on('change', function() {
+                loadQuestions(1);
+            });
+
+            // Выбор всех вопросов
+            $('#co-select-all-questions').on('change', function() {
+                $('#co-question-modal-list input[type="checkbox"]').prop('checked', this.checked);
+            });
+
+            // Добавление выбранных вопросов
+            $('#co-add-selected-questions').on('click', function() {
+                let selectedQuestions = [];
+                $('#co-question-modal-list input:checked').each(function() {
+                    let questionId = $(this).val();
+                    let questionText = $(this).data('title');
+                    selectedQuestions.push({ id: questionId, text: questionText });
+                    $('#co-questions-list').append(`
+                        <li class="co-question-item" data-question-id="${questionId}">
+                            <span class="co-question-title">${questionText}</span>
+                            <input type="hidden" name="co_questions[]" value="${questionId}">
+                            <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
+                            <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
+                            <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
+                        </li>
+                    `);
+                });
+                if (selectedQuestions.length) {
+                    console.log('Added questions:', selectedQuestions);
+                    $('#co-question-modal').dialog('close');
+                    updateQuestionOrder();
+                } else {
+                    alert('<?php _e('Please select at least one question.', 'career-orientation'); ?>');
+                }
+            });
+
+            // Загрузка вопросов через AJAX
+            function loadQuestions(page) {
+                let perPage = $('#co-questions-per-page').val();
+                let existingQuestionIds = [];
+                $('#co-questions-list .co-question-item').each(function() {
+                    existingQuestionIds.push($(this).data('question-id'));
+                });
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'co_load_questions',
+                        page: page,
+                        per_page: perPage,
+                        exclude: existingQuestionIds
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            let questions = response.data.questions;
+                            let totalPages = response.data.total_pages;
+                            let html = '';
+                            if (questions.length === 0) {
+                                html = '<tr><td colspan="2"><?php _e('No questions available.', 'career-orientation'); ?></td></tr>';
+                            } else {
+                                questions.forEach(function(question) {
+                                    html += `
+                                        <tr>
+                                            <td><input type="checkbox" value="${question.ID}" data-title="${question.post_title}"></td>
+                                            <td>${question.post_title}</td>
+                                        </tr>
+                                    `;
+                                });
+                            }
+                            $('#co-question-modal-list').html(html);
+                            updatePagination(page, totalPages);
+                        } else {
+                            console.error('Error loading questions:', response.data);
+                            $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                        $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                    }
+                });
+            }
+
+            // Обновление пагинации
+            function updatePagination(currentPage, totalPages) {
+                let paginationHtml = '';
+                if (totalPages > 1) {
+                    for (let i = 1; i <= totalPages; i++) {
+                        paginationHtml += `<button type="button" class="button co-page ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                    }
+                }
+                $('#co-question-modal-pagination').html(paginationHtml);
+                $('.co-page').on('click', function() {
+                    let page = $(this).data('page');
+                    loadQuestions(page);
+                });
+            }
 
             // Перемещение вопроса вверх
             $(document).on('click', '.co-move-up', function() {
@@ -211,10 +266,8 @@ function co_quiz_questions_meta_box($post) {
             $(document).on('click', '.co-remove-question', function() {
                 let $item = $(this).closest('.co-question-item');
                 let questionId = $item.data('question-id');
-                let questionText = $item.find('.co-question-title').text();
-                $('#co-add-question-select').append(`<option value="${questionId}">${questionText}</option>`);
+                console.log('Removed question:', { id: questionId });
                 $item.remove();
-                console.log('Removed question:', { id: questionId, text: questionText });
                 updateQuestionOrder();
             });
 
@@ -228,6 +281,8 @@ function co_quiz_questions_meta_box($post) {
                 $('input[name="co_questions[]"]').each(function(index) {
                     $(this).val(order[index]);
                 });
+                // Актуализация списка вопросов в модальном окне
+                loadQuestions(1);
             }
 
             // Переключение типа вопроса
@@ -267,10 +322,11 @@ function co_quiz_questions_meta_box($post) {
                         </p>
                         <div class="co-new-answers multiple_choice">
                             <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
-                            <label>
-                                <input type="checkbox" name="co_new_questions[${newIndex}][compact_layout]" value="yes" class="co-compact-layout">
-                                <?php _e('Compact Layout', 'career-orientation'); ?>
+                            <label for="co-compact-layout-new-${newIndex}">
+                                <input type="checkbox" name="co_new_questions[${newIndex}][compact_layout]" id="co-compact-layout-new-${newIndex}" value="yes" class="co-compact-layout">
+                                <?php _e('Compact Layout for Answers', 'career-orientation'); ?>
                             </label>
+                            <small><?php _e('(Affects answer display only)', 'career-orientation'); ?></small>
                             <div class="co-new-answers-list"></div>
                             <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
                         </div>
@@ -278,6 +334,8 @@ function co_quiz_questions_meta_box($post) {
                     </div>
                 `);
                 toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
+                // Актуализация списка вопросов в модальном окне
+                loadQuestions(1);
             });
 
             // Добавление ответа для нового вопроса
@@ -318,6 +376,8 @@ function co_quiz_questions_meta_box($post) {
             $(document).on('click', '.co-remove-new-question', function() {
                 $(this).closest('.co-new-question').remove();
                 questionIndex--;
+                // Актуализация списка вопросов в модальном окне
+                loadQuestions(1);
             });
 
             // Переключение типа вопроса
@@ -490,6 +550,26 @@ function co_quiz_questions_meta_box($post) {
             width: 100%;
             text-align: center;
         }
+        #co-question-modal .ui-dialog-titlebar {
+            background: #0073aa;
+            color: #fff;
+        }
+        .co-modal-header {
+            margin-bottom: 15px;
+        }
+        .co-modal-footer {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .co-page {
+            margin: 0 5px;
+        }
+        .co-page.active {
+            background: #0073aa;
+            color: #fff;
+        }
         @media (max-width: 600px) {
             .co-answer {
                 flex-direction: column;
@@ -564,16 +644,17 @@ function co_answers_meta_box($post) {
         <div id="co-answers-container" class="<?php echo esc_attr($question_type); ?>">
             <div id="co-numeric-answers-wrapper" style="<?php echo $question_type === 'multiple_choice' || $question_type === 'single_choice' ? '' : 'display:none;'; ?>">
                 <p>
-                    <label>
+                    <label for="co-numeric-answers">
                         <input type="checkbox" name="co_numeric_answers" id="co-numeric-answers" value="yes" <?php checked($numeric_answers); ?>>
                         <?php _e('Use numeric answers (1 to 30)', 'career-orientation'); ?>
                     </label>
                 </p>
-                <p id="co-compact-layout-wrapper" style="<?php echo ($question_type === 'multiple_choice' || $question_type === 'single_choice') ? '' : 'display:none;'; ?>">
-                    <label>
-                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout" value="yes" <?php checked($compact_layout); ?>>
-                        <?php _e('Compact Layout', 'career-orientation'); ?>
+                <p id="co-compact-layout-numeric-wrapper" style="<?php echo ($question_type === 'multiple_choice' || $question_type === 'single_choice') ? '' : 'display:none;'; ?>">
+                    <label for="co-compact-layout-numeric">
+                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout-numeric" value="yes" <?php checked($compact_layout); ?>>
+                        <?php _e('Compact Layout for Answers', 'career-orientation'); ?>
                     </label>
+                    <small><?php _e('(Affects answer display only)', 'career-orientation'); ?></small>
                 </p>
                 <div id="co-numeric-answers-settings" style="<?php echo $numeric_answers ? '' : 'display:none;'; ?>">
                     <p>
@@ -588,10 +669,11 @@ function co_answers_meta_box($post) {
             <?php if ($question_type !== 'text' && !$numeric_answers) : ?>
                 <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
                 <p>
-                    <label>
-                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout" value="yes" <?php checked($compact_layout); ?>>
-                        <?php _e('Compact Layout', 'career-orientation'); ?>
+                    <label for="co-compact-layout-manual">
+                        <input type="checkbox" name="co_compact_layout" id="co-compact-layout-manual" value="yes" <?php checked($compact_layout); ?>>
+                        <?php _e('Compact Layout for Answers', 'career-orientation'); ?>
                     </label>
+                    <small><?php _e('(Affects answer display only)', 'career-orientation'); ?></small>
                 </p>
                 <div id="co-answers-list">
                     <?php foreach ($answers as $index => $answer) : ?>
@@ -631,26 +713,28 @@ function co_answers_meta_box($post) {
                 let type = $('#co-question-type').val();
                 let container = $('#co-answers-container');
                 let numericWrapper = $('#co-numeric-answers-wrapper');
-                let compactLayoutWrapper = $('#co-compact-layout-wrapper');
+                let compactLayoutNumericWrapper = $('#co-compact-layout-numeric-wrapper');
+                let compactLayoutManualWrapper = $('#co-answers-list').prev('p');
                 console.log('toggleAnswersContainer: type=' + type + ', numeric_answers_checked=' + ($('#co-numeric-answers').is(':checked') ? 'true' : 'false'));
                 container.removeClass('multiple_choice single_choice text').addClass(type);
                 if (type === 'text') {
-                    container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings, #co-compact-layout').hide();
+                    container.find('#co-answers-list, #co-add-answer, #co-numeric-answers-settings, #co-compact-layout-numeric, #co-compact-layout-manual').hide();
                     numericWrapper.hide();
-                    compactLayoutWrapper.hide();
+                    compactLayoutNumericWrapper.hide();
+                    compactLayoutManualWrapper.hide();
                     if (!container.find('.text-notice').length) {
                         container.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
                     }
                 } else {
                     numericWrapper.show();
-                    compactLayoutWrapper.show();
+                    compactLayoutNumericWrapper.show();
                     if ($('#co-numeric-answers').is(':checked')) {
-                        container.find('#co-answers-list, #co-add-answer').hide();
-                        container.find('#co-numeric-answers-settings').show();
+                        container.find('#co-answers-list, #co-add-answer, #co-compact-layout-manual').hide();
+                        container.find('#co-numeric-answers-settings, #co-compact-layout-numeric').show();
                         container.find('.text-notice').remove();
                     } else {
-                        container.find('#co-numeric-answers-settings').hide();
-                        container.find('#co-answers-list, #co-add-answer').show();
+                        container.find('#co-numeric-answers-settings, #co-compact-layout-numeric').hide();
+                        container.find('#co-answers-list, #co-add-answer, #co-compact-layout-manual').show();
                         container.find('.text-notice').remove();
                     }
                 }

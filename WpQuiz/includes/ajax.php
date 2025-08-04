@@ -229,4 +229,48 @@ function co_generate_unique_link() {
     wp_send_json_success(['token' => $token]);
 }
 add_action('wp_ajax_co_generate_unique_link', 'co_generate_unique_link');
+
+function co_load_questions() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => __('Insufficient permissions', 'career-orientation')]);
+        error_log('Load questions failed: Insufficient permissions');
+        return;
+    }
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_admin_nonce')) {
+        wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
+        error_log('Load questions failed: Invalid nonce');
+        return;
+    }
+    $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+    $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 10;
+    $exclude = isset($_POST['exclude']) ? array_map('intval', (array)$_POST['exclude']) : [];
+
+    $args = [
+        'post_type' => 'co_question',
+        'posts_per_page' => $per_page,
+        'paged' => $page,
+        'post__not_in' => $exclude,
+        'post_status' => 'publish',
+    ];
+
+    $query = new WP_Query($args);
+    $questions = [];
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+            $questions[] = [
+                'ID' => get_the_ID(),
+                'post_title' => esc_html(get_the_title()),
+            ];
+        }
+    }
+    wp_reset_postdata();
+
+    wp_send_json_success([
+        'questions' => $questions,
+        'total_pages' => $query->max_num_pages,
+    ]);
+    error_log('Questions loaded: page=' . $page . ', per_page=' . $per_page . ', exclude=' . json_encode($exclude) . ', total_questions=' . count($questions));
+}
+add_action('wp_ajax_co_load_questions', 'co_load_questions');
 ?>
