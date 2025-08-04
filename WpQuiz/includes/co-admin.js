@@ -53,9 +53,9 @@ jQuery(document).ready(function($) {
                 <li class="co-question-item" data-question-id="${questionId}">
                     <span class="co-question-title">${questionText}</span>
                     <input type="hidden" name="co_questions[]" value="${questionId}">
-                    <button type="button" class="button co-move-up"><?php _e('Up', 'career-orientation'); ?></button>
-                    <button type="button" class="button co-move-down"><?php _e('Down', 'career-orientation'); ?></button>
-                    <button type="button" class="button co-remove-question"><?php _e('Remove', 'career-orientation'); ?></button>
+                    <button type="button" class="button co-move-up">${co_quiz_admin.translations.up}</button>
+                    <button type="button" class="button co-move-down">${co_quiz_admin.translations.down}</button>
+                    <button type="button" class="button co-remove-question">${co_quiz_admin.translations.remove}</button>
                 </li>
             `);
         });
@@ -64,7 +64,7 @@ jQuery(document).ready(function($) {
             $('#co-question-modal').dialog('close');
             updateQuestionOrder();
         } else {
-            alert('<?php _e('Please select at least one question.', 'career-orientation'); ?>');
+            alert(co_quiz_admin.translations.select_at_least_one);
         }
     });
 
@@ -93,7 +93,7 @@ jQuery(document).ready(function($) {
                     let totalPages = response.data.total_pages;
                     let html = '';
                     if (questions.length === 0) {
-                        html = '<tr><td colspan="2"><?php _e('No questions available.', 'career-orientation'); ?></td></tr>';
+                        html = `<tr><td colspan="2">${co_quiz_admin.translations.no_questions_available}</td></tr>`;
                     } else {
                         questions.forEach(function(question) {
                             html += `
@@ -108,12 +108,12 @@ jQuery(document).ready(function($) {
                     updatePagination(page, totalPages);
                 } else {
                     console.error('Error loading questions:', response.data);
-                    $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                    $('#co-question-modal-list').html(`<tr><td colspan="2">${co_quiz_admin.translations.error_loading_questions}</td></tr>`);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error:', error, xhr.responseText);
-                $('#co-question-modal-list').html('<tr><td colspan="2"><?php _e('Error loading questions.', 'career-orientation'); ?></td></tr>');
+                $('#co-question-modal-list').html(`<tr><td colspan="2">${co_quiz_admin.translations.error_loading_questions}</td></tr>`);
             }
         });
     }
@@ -186,7 +186,7 @@ jQuery(document).ready(function($) {
         if (type === 'text') {
             answersContainer.find('.co-new-answers-list, .co-add-new-answer, .co-compact-layout').hide();
             if (!answersContainer.find('.text-notice').length) {
-                answersContainer.append('<p class="text-notice"><?php _e('Text questions allow users to enter a custom response (no weights).', 'career-orientation'); ?></p>');
+                answersContainer.append(`<p class="text-notice">${co_quiz_admin.translations.text_notice}</p>`);
             }
         } else {
             answersContainer.find('.text-notice').remove();
@@ -199,30 +199,30 @@ jQuery(document).ready(function($) {
         let newIndex = questionIndex++;
         $('#co-new-questions-list').append(`
             <div class="co-new-question">
-                <input type="text" name="co_new_questions[${newIndex}][title]" placeholder="<?php _e('Question title', 'career-orientation'); ?>" />
+                <input type="text" name="co_new_questions[${newIndex}][title]" placeholder="${co_quiz_admin.translations.question_title_placeholder}" />
                 <label>
                     <input type="checkbox" name="co_new_questions[${newIndex}][required]" value="yes">
-                    <?php _e('Required', 'career-orientation'); ?>
+                    ${co_quiz_admin.translations.required}
                 </label>
                 <p>
-                    <label><?php _e('Question Type:', 'career-orientation'); ?></label>
+                    <label>${co_quiz_admin.translations.question_type_label}</label>
                     <select name="co_new_questions[${newIndex}][type]" class="co-new-question-type">
-                        <option value="multiple_choice"><?php _e('Multiple Choice', 'career-orientation'); ?></option>
-                        <option value="single_choice"><?php _e('Single Choice', 'career-orientation'); ?></option>
-                        <option value="text"><?php _e('Text', 'career-orientation'); ?></option>
+                        <option value="multiple_choice">${co_quiz_admin.translations.multiple_choice}</option>
+                        <option value="single_choice">${co_quiz_admin.translations.single_choice}</option>
+                        <option value="text">${co_quiz_admin.translations.text}</option>
                     </select>
                 </p>
                 <div class="co-new-answers multiple_choice">
-                    <p><?php _e('Add up to 30 answers with their weights (integer values).', 'career-orientation'); ?></p>
+                    <p>${co_quiz_admin.translations.add_answer_text}</p>
                     <label for="co-compact-layout-new-${newIndex}">
                         <input type="checkbox" name="co_new_questions[${newIndex}][compact_layout]" id="co-compact-layout-new-${newIndex}" value="yes" class="co-compact-layout">
-                        <?php _e('Compact Layout for Answers', 'career-orientation'); ?>
+                        ${co_quiz_admin.translations.compact_layout}
                     </label>
-                    <small><?php _e('(Affects answer display only)', 'career-orientation'); ?></small>
+                    <small>${co_quiz_admin.translations.compact_layout_note}</small>
                     <div class="co-new-answers-list"></div>
-                    <button type="button" class="button co-add-new-answer"><?php _e('Add Answer', 'career-orientation'); ?></button>
+                    <button type="button" class="button co-add-new-answer">${co_quiz_admin.translations.add_answer_button}</button>
                 </div>
-                <button type="button" class="button co-remove-new-question"><?php _e('Remove Question', 'career-orientation'); ?></button>
+                <button type="button" class="button co-remove-new-question">${co_quiz_admin.translations.remove_question_button}</button>
             </div>
         `);
         toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
@@ -233,24 +233,24 @@ jQuery(document).ready(function($) {
         let $question = $(this).closest('.co-new-question');
         let index = $question.find('.co-answer').length;
         if (index >= 30) {
-            alert('<?php _e('Maximum 30 answers allowed.', 'career-orientation'); ?>');
+            alert(co_quiz_admin.translations.max_answers_alert);
             return;
         }
         $question.find('.co-new-answers-list').append(`
             <div class="co-answer">
                 <div class="co-answer-left">
                     <div class="co-formatting-toolbar">
-                        <button type="button" class="button co-format-bold" data-format="bold" title="<?php _e('Bold', 'career-orientation'); ?>"><b>B</b></button>
-                        <button type="button" class="button co-format-italic" data-format="italic" title="<?php _e('Italic', 'career-orientation'); ?>"><i>I</i></button>
-                        <button type="button" class="button co-format-underline" data-format="underline" title="<?php _e('Underline', 'career-orientation'); ?>"><u>U</u></button>
-                        <button type="button" class="button co-format-br" data-format="br" title="<?php _e('Line Break', 'career-orientation'); ?>">&#9166;</button>
+                        <button type="button" class="button co-format-bold" data-format="bold" title="${co_quiz_admin.translations.bold_title}"><b>B</b></button>
+                        <button type="button" class="button co-format-italic" data-format="italic" title="${co_quiz_admin.translations.italic_title}"><i>I</i></button>
+                        <button type="button" class="button co-format-underline" data-format="underline" title="${co_quiz_admin.translations.underline_title}"><u>U</u></button>
+                        <button type="button" class="button co-format-br" data-format="br" title="${co_quiz_admin.translations.line_break_title}">&#9166;</button>
                     </div>
-                    <div class="co-answer-text" contenteditable="true" data-placeholder="<?php _e('Answer text', 'career-orientation'); ?>"></div>
+                    <div class="co-answer-text" contenteditable="true" data-placeholder="${co_quiz_admin.translations.answer_text_placeholder}"></div>
                     <textarea name="co_new_questions[${$question.index()}][answers][${index}][text]" class="co-answer-text-hidden" style="display: none;"></textarea>
                 </div>
                 <div class="co-answer-right">
-                    <button type="button" class="button co-remove-new-answer"><?php _e('Remove', 'career-orientation'); ?></button>
-                    <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="<?php _e('Weight', 'career-orientation'); ?>" step="1" class="co-answer-weight" />
+                    <button type="button" class="button co-remove-new-answer">${co_quiz_admin.translations.remove_answer_button}</button>
+                    <input type="number" name="co_new_questions[${$question.index()}][answers][${index}][weight]" placeholder="${co_quiz_admin.translations.weight_placeholder}" step="1" class="co-answer-weight" />
                 </div>
             </div>
         `);
@@ -357,4 +357,121 @@ jQuery(document).ready(function($) {
     $('.co-new-question').each(function() {
         toggleNewAnswersContainer($(this));
     });
+
+    // CSS стили
+    const styles = `
+        .co-sortable {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .co-question-item {
+            background: #fff;
+            border: 1px solid #ccd0d4;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            cursor: move;
+        }
+        .co-question-item .co-question-title {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .co-question-item button {
+            margin-left: 5px;
+        }
+        .co-sortable-placeholder {
+            border: 1px dashed #0073aa;
+            background: #f0f0f0;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        .co-answer {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .co-answer-left {
+            width: 85%;
+        }
+        .co-answer-right {
+            width: 15%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+        .co-formatting-toolbar {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        .co-formatting-toolbar button {
+            padding: 5px 10px;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .co-answer-text {
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-y: auto;
+        }
+        .co-answer-text.empty:before {
+            content: attr(data-placeholder);
+            color: #777;
+            pointer-events: none;
+        }
+        .co-answer-weight {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ccd0d4;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .co-remove-new-answer {
+            width: 100%;
+            text-align: center;
+        }
+        #co-question-modal .ui-dialog-titlebar {
+            background: #0073aa;
+            color: #fff;
+        }
+        .co-modal-header {
+            margin-bottom: 15px;
+        }
+        .co-modal-footer {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .co-page {
+            margin: 0 5px;
+        }
+        .co-page.active {
+            background: #0073aa;
+            color: #fff;
+        }
+        @media (max-width: 600px) {
+            .co-answer {
+                flex-direction: column;
+            }
+            .co-answer-left, .co-answer-right {
+                width: 100%;
+            }
+            .co-answer-right {
+                align-items: center;
+            }
+            .co-answer-weight {
+                width: 100%;
+            }
+        }
+    `;
+    $('<style>').text(styles).appendTo('head');
 });
