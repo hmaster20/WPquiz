@@ -98,8 +98,8 @@ jQuery(document).ready(function($) {
                         questions.forEach(function(question) {
                             html += `
                                 <tr>
-                                    <td><input type="checkbox" value="${question.ID}" data-title="${question.post_title}"></td>
-                                    <td>${question.post_title}</td>
+                                    <td class="co-checkbox-cell"><input type="checkbox" value="${question.ID}" data-title="${question.post_title}"></td>
+                                    <td class="co-question-text">${question.post_title}</td>
                                 </tr>
                             `;
                         });
@@ -379,7 +379,8 @@ jQuery(document).ready(function($) {
             margin-right: 10px;
         }
         .co-question-item button {
-            margin-left: 5px;
+            margin-left: 10px;
+            padding: 5px 10px;
         }
         .co-sortable-placeholder {
             border: 1px dashed #0073aa;

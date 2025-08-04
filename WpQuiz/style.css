@@ -399,65 +399,13 @@
     margin-right: 10px;
 }
 
-.co-question-item button {
-    margin-left: 5px;
-}
-
-.co-sortable-placeholder {
-    border: 1px dashed #0073aa;
-    background: #f0f0f0;
-    height: 40px;
-    margin-bottom: 5px;
-}
-
-/* Стили для ответов в админке */
-.co-answer {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.co-answer-left {
-    width: 85%;
-}
-
-.co-answer-right {
-    width: 15%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10px;
-}
-
-.co-answer-text {
-    min-height: 60px;
-    padding: 8px;
-    border: 1px solid #ccd0d4;
-    border-radius: 4px;
-    font-size: 14px;
+.co-question-item .co-move-up,
+.co-question-item .co-move-down,
+.co-question-item .co-remove-question {
+    margin-left: 10px;
+    padding: 5px 10px;
+    font-size: 12px;
     line-height: 1.5;
-    overflow-y: auto;
-}
-
-.co-answer-text.empty:before {
-    content: attr(data-placeholder);
-    color: #777;
-    pointer-events: none;
-}
-
-.co-answer-weight {
-    width: 60px;
-    padding: 8px;
-    border: 1px solid #ccd0d4;
-    border-radius: 4px;
-    font-size: 14px;
-    text-align: center;
-}
-
-.co-remove-answer,
-.co-remove-new-answer {
-    width: 100%;
-    text-align: center;
 }
 
 /* Стили для модального окна */
@@ -485,7 +433,8 @@
     margin: 0 0 10px;
 }
 
-.co-modal-header select {
+.co-modal-header select#co-questions-per-page {
+    width: 60px;
     padding: 8px;
     border: 1px solid #d2d6dc;
     border-radius: 4px;
@@ -511,6 +460,27 @@
 .co-page.active {
     background: #0073aa;
     color: #fff;
+}
+
+/* Стили для таблицы вопросов в модальном окне */
+#co-question-modal-content .wp-list-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#co-question-modal-content th,
+#co-question-modal-content td {
+    text-align: left;
+    padding: 8px;
+}
+
+#co-question-modal-content .co-checkbox-cell {
+    width: 40px;
+    padding-right: 5px;
+}
+
+#co-question-modal-content .co-question-text {
+    padding-left: 5px;
 }
 
 /* Стили для компактного расположения в админке */
@@ -600,6 +570,14 @@
         font-size: 0.95rem;
     }
 
+    .co-question-item .co-move-up,
+    .co-question-item .co-move-down,
+    .co-question-item .co-remove-question {
+        margin-left: 8px;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
     #co-quiz-entry {
         padding: 20px;
     }
@@ -676,7 +654,7 @@
         font-size: 1.3rem;
     }
 
-    .co-modal-header select {
+    .co-modal-header select#co-questions-per-page {
         width: 100%;
     }
 }
