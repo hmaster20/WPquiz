@@ -45,22 +45,6 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-dashboard',
-        __('Analytics', 'career-orientation'),
-        __('Analytics', 'career-orientation'),
-        'manage_options',
-        'co-analytics',
-        'co_analytics_page'
-    );
-    add_submenu_page(
-        'co-dashboard',
-        __('Reports', 'career-orientation'),
-        __('Reports', 'career-orientation'),
-        'manage_options',
-        'co-reports',
-        'co_reports_page'
-    );
-    add_submenu_page(
-        'co-dashboard',
         __('Links', 'career-orientation'),
         __('Links', 'career-orientation'),
         'manage_options',

@@ -1,6 +1,173 @@
 /* Стили для административной части плагина Career Orientation */
 /* Используются для оформления интерфейса админки, включая сортируемые списки, модальные окна и dashboard */
 
+/* Начало списка для страницы dashboard.php */
+/* Общие стили для дашборда */
+.co-dashboard-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.co-stat-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    flex: 1 1 200px;
+    text-align: center;
+}
+
+.co-stat-card h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+
+.co-stat-card p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Стили для сортируемого списка вопросов */
+.co-sortable {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px;
+}
+
+.co-question-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.co-question-item .co-question-title {
+    flex: 1;
+}
+
+.co-move-up,
+.co-move-down,
+.co-remove-question {
+    padding: 5px 10px;
+}
+
+/* Стили для модального окна */
+.co-modal-header {
+    margin-bottom: 20px;
+}
+
+.co-modal-footer {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#co-question-modal-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Стили для ответов в метабоксе */
+.co-answers {
+    margin-bottom: 20px;
+}
+
+.co-answer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.co-answer-left {
+    flex: 1;
+}
+
+.co-answer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.co-answer-text {
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-height: 40px;
+}
+
+.co-formatting-toolbar {
+    margin-bottom: 5px;
+}
+
+.co-formatting-toolbar .button {
+    margin-right: 5px;
+}
+
+/* Стили для уникальных ссылок */
+.co-unique-links-table .column-token {
+    width: 30%;
+}
+
+.co-unique-links-table .column-status {
+    width: 10%;
+}
+
+/* Стили для раздела Статистика */
+.co-statistics-title {
+    cursor: pointer;
+}
+
+.co-statistics-title .co-toggle-statistics {
+    font-size: 14px;
+    color: #0073aa;
+}
+
+.co-statistics-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* Стили для графиков */
+.co-chart-container {
+    margin: 20px 0;
+    max-width: 100%;
+}
+
+.co-quiz-title {
+    cursor: pointer;
+}
+
+.co-quiz-title .co-toggle-chart {
+    font-size: 14px;
+    color: #0073aa;
+}
+
+/* Стили для отчетов */
+.co-report-title {
+    cursor: pointer;
+}
+
+.co-report-title .co-toggle-report {
+    font-size: 14px;
+    color: #0073aa;
+}
+
+.co-report-container {
+    margin: 20px 0;
+}
+
+/* Конец списка для страницы dashboard.php */
+
 /* Сортируемый список вопросов */
 .co-sortable {
     list-style-type: none;

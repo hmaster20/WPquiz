@@ -22,7 +22,7 @@ function co_admin_enqueue_assets($hook) {
     wp_enqueue_script('jquery-ui-dialog');
     wp_enqueue_style('wp-jquery-ui-dialog');
     wp_enqueue_style('co-internal-styles', plugin_dir_url(__FILE__) . '../internal.css', [], filemtime(plugin_dir_path(__FILE__) . '../internal.css'));
-    if (in_array($hook, ['toplevel_page_co-dashboard', 'career-orientation_page_co-analytics', 'career-orientation_page_co-reports'])) {
+    if ($hook === 'toplevel_page_co-dashboard') {
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js', ['jquery'], '4.4.2', true);
     }
 }
