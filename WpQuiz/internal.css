@@ -137,6 +137,31 @@
     border-radius: 5px;
 }
 
+/* Стили для подраздела Обзор | Overview */
+.co-overview-section {
+    margin-bottom: 20px;
+}
+
+.co-overview-section h4 {
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.co-overview-section ul {
+    list-style-type: disc;
+    margin-left: 20px;
+}
+
+.co-overview-section ul li {
+    margin-bottom: 10px;
+}
+
+.co-overview-section code {
+    background: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
 /* Стили для графиков */
 .co-chart-container {
     margin: 20px 0;

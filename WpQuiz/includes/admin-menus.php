@@ -23,14 +23,6 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-dashboard',
-        __('Overview', 'career-orientation'),
-        __('Overview', 'career-orientation'),
-        'manage_options',
-        'co-overview',
-        'co_overview_page'
-    );
-    add_submenu_page(
-        'co-dashboard',
         __('Questions', 'career-orientation'),
         __('Questions', 'career-orientation'),
         'manage_options',
