@@ -46,30 +46,6 @@ function co_dashboard_page() {
                 <p><?php echo esc_html($unique_links_used); ?></p>
             </div>
         </div>
-        <style>
-            .co-dashboard-stats {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-            }
-            .co-stat-card {
-                background: #fff;
-                border: 1px solid #ccd0d4;
-                padding: 20px;
-                flex: 1 1 200px;
-                text-align: center;
-                box-shadow: 0 1px 1px rgba(0,0,0,.04);
-            }
-            .co-stat-card h3 {
-                margin: 0 0 10px;
-                font-size: 16px;
-            }
-            .co-stat-card p {
-                font-size: 24px;
-                margin: 0;
-                color: #0073aa;
-            }
-        </style>
     </div>
     <?php
 }
@@ -413,20 +389,6 @@ function co_analytics_page() {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-    <style>
-        .co-chart-container {
-            margin-bottom: 20px;
-        }
-        .co-toggle-chart {
-            cursor: pointer;
-            color: #0073aa;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .co-toggle-chart:hover {
-            text-decoration: underline;
-        }
-    </style>
     <?php
 }
 
@@ -572,20 +534,6 @@ function co_reports_page() {
             </script>
         <?php endif; ?>
     </div>
-    <style>
-        .co-report-container {
-            margin-bottom: 20px;
-        }
-        .co-toggle-report {
-            cursor: pointer;
-            color: #0073aa;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .co-toggle-report:hover {
-            text-decoration: underline;
-        }
-    </style>
     <?php
 }
 ?>

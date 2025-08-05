@@ -1,0 +1,381 @@
+/* Стили для фронтенда плагина Career Orientation */
+/* Обеспечивают оформление викторины, видимой пользователям сайта */
+
+/* Контейнер викторины */
+.co-quiz-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Заголовки */
+.co-quiz-container h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 24px;
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+
+/* Форма ввода данных */
+#co-quiz-entry {
+    background: #f9fafb;
+    padding: 24px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+#co-quiz-entry-form p {
+    margin-bottom: 20px;
+}
+
+#co-quiz-entry-form label {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+#co-quiz-entry-form input[type="text"],
+#co-quiz-entry-form input[type="tel"],
+#co-quiz-entry-form input[type="email"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    color: #2d3748;
+    background: #ffffff;
+    border: 1px solid #d2d6dc;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#co-quiz-entry-form input:focus {
+    outline: none;
+    border-color: #2b6cb0;
+    box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.1);
+}
+
+#co-quiz-entry-form button#co-submit-entry {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #2b6cb0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+#co-quiz-entry-form button#co-submit-entry:hover {
+    background: #2c5282;
+    transform: translateY(-1px);
+}
+
+#co-quiz-entry-form button#co-submit-entry:active {
+    transform: translateY(0);
+}
+
+/* Отображение токена */
+#co-quiz-token {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#co-quiz-token p {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+#co-quiz-token span {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #edf2f7;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    color: #2d3748;
+}
+
+/* Заголовки вопросов */
+.co-question h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 24px;
+    line-height: 1.4;
+}
+
+/* Варианты ответов */
+.co-answer-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+}
+
+.co-answer-options label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 1rem;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.co-answer-options label:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+    transform: translateY(-1px);
+}
+
+.co-answer-options input[type="radio"],
+.co-answer-options input[type="checkbox"] {
+    margin: 0 12px 0 0;
+    accent-color: #2b6cb0;
+    width: 18px;
+    height: 18px;
+}
+
+/* Форматированный текст в ответах */
+.co-answer-options label span {
+    display: inline-block;
+    line-height: 1.5;
+}
+
+.co-answer-options label span b {
+    font-weight: 700;
+}
+
+.co-answer-options label span i {
+    font-style: italic;
+}
+
+.co-answer-options label span u {
+    text-decoration: underline;
+}
+
+.co-answer-options label span br {
+    display: block;
+    content: "";
+    margin-top: 8px;
+}
+
+/* Компактное горизонтальное размещение */
+.co-answer-options.co-compact-layout {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 5px;
+    overflow-x: auto;
+}
+
+.co-answer-options.co-compact-layout label {
+    flex: 1;
+    min-width: 50px;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Одиночный и множественный выбор */
+.co-single-choice-answers,
+.co-numeric-answers {
+    display: contents;
+}
+
+/* Текстовое поле */
+.co-question textarea {
+    width: 100%;
+    height: 120px;
+    padding: 14px;
+    font-size: 1rem;
+    color: #2d3748;
+    background: #ffffff;
+    border: 1px solid #d2d6dc;
+    border-radius: 8px;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.co-question textarea:focus {
+    outline: none;
+    border-color: #2b6cb0;
+    box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.1);
+}
+
+/* Навигационные кнопки */
+.co-quiz-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.co-quiz-navigation button {
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #2b6cb0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.co-quiz-navigation button:hover {
+    background: #2c5282;
+    transform: translateY(-1px);
+}
+
+.co-quiz-navigation .co-prev-question {
+    background: #718096;
+}
+
+.co-quiz-navigation .co-prev-question:hover {
+    background: #5a6473;
+}
+
+.co-quiz-navigation .co-submit-quiz {
+    background: #2f855a;
+}
+
+.co-quiz-navigation .co-submit-quiz:hover {
+    background: #276749;
+}
+
+/* Прогресс-бар */
+.co-progress-bar {
+    margin-bottom: 24px;
+}
+
+.co-progress-bar .progress-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 10px;
+}
+
+.co-progress-bar .progress-container {
+    width: 100%;
+    height: 10px;
+    background: #edf2f7;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.co-progress-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2b6cb0, #63b3ed);
+    width: 0;
+    transition: width 0.4s ease;
+}
+
+/* Сообщения после завершения */
+#co-quiz-thank-you,
+#co-quiz-results {
+    text-align: center;
+    padding: 24px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-top: 24px;
+}
+
+#co-quiz-thank-you p,
+#co-quiz-results p {
+    font-size: 1.2rem;
+    color: #2d3748;
+    margin: 0 0 12px;
+    font-weight: 500;
+}
+
+/* Текстовые вопросы */
+.co-answers-container.text .text-notice {
+    font-style: italic;
+    color: #718096;
+    font-size: 0.9rem;
+    margin-top: 12px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 600px) {
+    .co-quiz-container {
+        padding: 20px;
+    }
+
+    .co-quiz-container h2 {
+        font-size: 1.6rem;
+    }
+
+    .co-question h3 {
+        font-size: 1.3rem;
+    }
+
+    .co-answer-options label {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+
+    .co-answer-options label span {
+        font-size: 0.9rem;
+    }
+
+    .co-quiz-navigation {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .co-quiz-navigation button {
+        padding: 10px;
+        font-size: 0.95rem;
+    }
+
+    #co-quiz-entry {
+        padding: 20px;
+    }
+
+    #co-quiz-entry-form input[type="text"],
+    #co-quiz-entry-form input[type="tel"],
+    #co-quiz-entry-form input[type="email"] {
+        padding: 10px;
+        font-size: 0.95rem;
+    }
+
+    #co-quiz-entry-form button#co-submit-entry {
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    #co-quiz-token p {
+        font-size: 0.9rem;
+    }
+
+    #co-quiz-token span {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+
+    .co-answer-options.co-compact-layout label {
+        min-width: 40px;
+        font-size: 0.85rem;
+    }
+}
