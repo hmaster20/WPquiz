@@ -332,6 +332,18 @@
     margin-right: 10px;
 }
 
+/* Стили для переключения справочной информации */
+.co-toggle-help {
+    cursor: pointer;
+    color: #0073aa;
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+.co-toggle-help:hover {
+    text-decoration: underline;
+}
+
 /* Адаптивность для мобильных устройств */
 @media (max-width: 600px) {
     .co-question-item .co-move-up,

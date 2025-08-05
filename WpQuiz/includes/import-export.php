@@ -150,7 +150,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Предварительный просмотр вопросов', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с вопросами для предварительного просмотра.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_preview_questions', 'co_preview_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Questions Preview:', 'career-orientation'); ?></label>
@@ -185,7 +185,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Импорт вопросов', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с вопросами и нажмите «Импортировать вопросы». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_import_questions', 'co_import_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Questions:', 'career-orientation'); ?></label>
@@ -205,7 +205,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Предварительный просмотр рубрик', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с рубриками для предварительного просмотра.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_preview_rubrics', 'co_preview_rubrics_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Rubrics Preview:', 'career-orientation'); ?></label>
@@ -240,7 +240,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Импорт рубрик', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с рубриками и нажмите «Импортировать рубрики». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_import_rubrics', 'co_import_rubrics_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Rubrics:', 'career-orientation'); ?></label>
@@ -260,7 +260,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Предварительный просмотр категорий', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с категориями для предварительного просмотра.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_preview_categories', 'co_preview_categories_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Categories Preview:', 'career-orientation'); ?></label>
@@ -295,7 +295,7 @@ function co_import_export_page() {
         
         <h3><?php _e('Импорт категорий', 'career-orientation'); ?></h3>
         <p><?php _e('Выберите CSV-файл с категориями и нажмите «Импортировать категории». Файл должен соответствовать указанному формату.', 'career-orientation'); ?></p>
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" class="co-import-export-form">
             <?php wp_nonce_field('co_import_categories', 'co_import_categories_nonce'); ?>
             <p>
                 <label><?php _e('Select CSV File for Categories:', 'career-orientation'); ?></label>
@@ -489,17 +489,6 @@ function co_import_export_page() {
             });
         });
     </script>
-    <style>
-        .co-toggle-help {
-            cursor: pointer;
-            color: #0073aa;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .co-toggle-help:hover {
-            text-decoration: underline;
-        }
-    </style>
     <?php
 }
 
@@ -1142,7 +1131,7 @@ function co_import_categories_from_csv($file_path) {
             co_log_import_error("Row $row_number: Skipping, empty name or slug.");
             $result['errors'][] = sprintf(__('Row %d: Empty name or slug.', 'career-orientation'), $row_number);
             continue;
-        }
+            }
 
         $slug = sanitize_title($data['slug']);
         $term = term_exists($slug, 'co_category');
@@ -1150,7 +1139,7 @@ function co_import_categories_from_csv($file_path) {
             co_log_import_error("Row $row_number: Slug '$slug' already exists, skipping.");
             $result['errors'][] = sprintf(__('Row %d: Slug %s already exists.', 'career-orientation'), $row_number, $slug);
             continue;
-        }
+    }
 
         $term = wp_insert_term($data['name'], 'co_category', [
             'slug' => $slug,
