@@ -2,7 +2,6 @@ jQuery(document).ready(function($) {
     console.log('co_quiz_questions_meta_box script loaded');
     let questionIndex = 0;
 
-    // Инициализация jQuery UI Sortable
     $('#co-questions-list').sortable({
         placeholder: 'co-sortable-placeholder',
         update: function(event, ui) {
@@ -11,7 +10,6 @@ jQuery(document).ready(function($) {
         }
     }).disableSelection();
 
-    // Инициализация модального окна
     $('#co-question-modal').dialog({
         autoOpen: false,
         modal: true,
@@ -22,27 +20,22 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Открытие модального окна
     $('#co-open-question-modal').on('click', function() {
         $('#co-question-modal').dialog('open');
     });
 
-    // Закрытие модального окна
     $('#co-close-question-modal').on('click', function() {
         $('#co-question-modal').dialog('close');
     });
 
-    // Выбор количества вопросов на странице
     $('#co-questions-per-page').on('change', function() {
         loadQuestions(1);
     });
 
-    // Выбор всех вопросов
     $('#co-select-all-questions').on('change', function() {
         $('#co-question-modal-list input[type="checkbox"]').prop('checked', this.checked);
     });
 
-    // Добавление выбранных вопросов
     $('#co-add-selected-questions').on('click', function() {
         let selectedQuestions = [];
         $('#co-question-modal-list input:checked').each(function() {
@@ -68,7 +61,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Загрузка вопросов через AJAX
     function loadQuestions(page) {
         let perPage = $('#co-questions-per-page').val();
         let existingQuestionIds = [];
@@ -118,7 +110,6 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Обновление пагинации
     function updatePagination(currentPage, totalPages) {
         let paginationHtml = '';
         if (totalPages > 1) {
@@ -133,7 +124,6 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Перемещение вопроса вверх
     $(document).on('click', '.co-move-up', function() {
         let $item = $(this).closest('.co-question-item');
         let $prev = $item.prev();
@@ -144,7 +134,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Перемещение вопроса вниз
     $(document).on('click', '.co-move-down', function() {
         let $item = $(this).closest('.co-question-item');
         let $next = $item.next();
@@ -155,7 +144,6 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Удаление вопроса из списка
     $(document).on('click', '.co-remove-question', function() {
         let $item = $(this).closest('.co-question-item');
         let questionId = $item.data('question-id');
@@ -164,7 +152,6 @@ jQuery(document).ready(function($) {
         updateQuestionOrder();
     });
 
-    // Обновление порядка вопросов
     function updateQuestionOrder() {
         let order = [];
         $('#co-questions-list .co-question-item').each(function() {
@@ -177,7 +164,6 @@ jQuery(document).ready(function($) {
         loadQuestions(1);
     }
 
-    // Переключение типа вопроса
     function toggleNewAnswersContainer($container) {
         let type = $container.find('.co-new-question-type').val();
         let answersContainer = $container.find('.co-new-answers');
@@ -194,7 +180,6 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Добавление нового вопроса
     $('#co-add-new-question').on('click', function() {
         let newIndex = questionIndex++;
         $('#co-new-questions-list').append(`
@@ -228,7 +213,6 @@ jQuery(document).ready(function($) {
         toggleNewAnswersContainer($(`#co-new-questions-list .co-new-question:last`));
     });
 
-    // Добавление ответа для нового вопроса
     $(document).on('click', '.co-add-new-answer', function() {
         let $question = $(this).closest('.co-new-question');
         let index = $question.find('.co-answer').length;
@@ -257,30 +241,25 @@ jQuery(document).ready(function($) {
         initContentEditable($question.find('.co-answer-text:last'));
     });
 
-    // Удаление ответа
     $(document).on('click', '.co-remove-new-answer', function() {
         $(this).closest('.co-answer').remove();
     });
 
-    // Удаление нового вопроса
     $(document).on('click', '.co-remove-new-question', function() {
         $(this).closest('.co-new-question').remove();
         questionIndex--;
     });
 
-    // Переключение типа вопроса
     $(document).on('change', '.co-new-question-type', function() {
         toggleNewAnswersContainer($(this).closest('.co-new-question'));
     });
 
-    // Инициализация contenteditable
     function initContentEditable($element) {
         let $hiddenTextarea = $element.siblings('.co-answer-text-hidden');
         $element.on('input', function() {
             $hiddenTextarea.val($element.html());
             adjustContentEditableHeight($element[0]);
         });
-        // Плейсхолдер
         if ($element.text().trim() === '') {
             $element.addClass('empty');
         }
@@ -296,7 +275,6 @@ jQuery(document).ready(function($) {
             }
             $hiddenTextarea.val($element.html());
         });
-        // Обработка нажатия Enter
         $element.on('keydown', function(e) {
             if (e.keyCode === 13) {
                 e.preventDefault();
@@ -322,7 +300,6 @@ jQuery(document).ready(function($) {
         adjustContentEditableHeight($element[0]);
     }
 
-    // Авто-ресайз для contenteditable
     function adjustContentEditableHeight(element) {
         element.style.height = 'auto';
         const minHeight = 60;
@@ -330,7 +307,6 @@ jQuery(document).ready(function($) {
         element.style.height = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight) + 'px';
     }
 
-    // Форматирование текста
     $(document).on('click', '.co-format-bold, .co-format-italic, .co-format-underline, .co-format-br', function() {
         let $answer = $(this).closest('.co-answer');
         let $contentEditable = $answer.find('.co-answer-text');
@@ -349,7 +325,6 @@ jQuery(document).ready(function($) {
         console.log(`Applied ${format} formatting: content=`, $contentEditable.html());
     });
 
-    // Инициализация существующих contenteditable
     $('.co-answer-text').each(function() {
         initContentEditable($(this));
     });

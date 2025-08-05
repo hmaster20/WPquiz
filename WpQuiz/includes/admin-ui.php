@@ -3,6 +3,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once plugin_dir_path(__FILE__) . 'dashboard.php';
+require_once plugin_dir_path(__FILE__) . 'import-export.php';
+require_once plugin_dir_path(__FILE__) . 'career.php';
+require_once plugin_dir_path(__FILE__) . 'question-quiz.php';
+
 function co_admin_menu() {
     add_menu_page(
         __('Career Orientation Dashboard', 'career-orientation'),
@@ -23,39 +28,11 @@ function co_admin_menu() {
     );
     add_submenu_page(
         'co-dashboard',
-        __('Questions', 'career-orientation'),
-        __('Questions', 'career-orientation'),
-        'manage_options',
-        'edit.php?post_type=co_question'
-    );
-    add_submenu_page(
-        'co-dashboard',
-        __('Quizzes', 'career-orientation'),
-        __('Quizzes', 'career-orientation'),
-        'manage_options',
-        'edit.php?post_type=co_quiz'
-    );
-    add_submenu_page(
-        'co-dashboard',
         __('Links', 'career-orientation'),
         __('Links', 'career-orientation'),
         'manage_options',
         'co-links',
         'co_unique_links_page'
-    );
-    add_submenu_page(
-        'co-dashboard',
-        __('Categories', 'career-orientation'),
-        __('Categories', 'career-orientation'),
-        'manage_options',
-        'edit-tags.php?taxonomy=co_category&post_type=co_quiz'
-    );
-    add_submenu_page(
-        'co-dashboard',
-        __('Rubrics', 'career-orientation'),
-        __('Rubrics', 'career-orientation'),
-        'manage_options',
-        'edit-tags.php?taxonomy=co_rubric&post_type=co_question'
     );
     add_submenu_page(
         'co-dashboard',
@@ -70,22 +47,18 @@ add_action('admin_menu', 'co_admin_menu');
 
 function co_fix_taxonomy_menu($parent_file) {
     global $submenu_file;
-    // Обработка таксономий
     if (isset($_GET['taxonomy']) && in_array($_GET['taxonomy'], ['co_category', 'co_rubric']) && isset($_GET['post_type'])) {
         $parent_file = 'co-dashboard';
         $submenu_file = 'edit-tags.php?taxonomy=' . $_GET['taxonomy'] . '&post_type=' . $_GET['post_type'];
     }
-    // Обработка страницы импорта/экспорта
     if (isset($_GET['page']) && $_GET['page'] === 'co-import-export') {
         $parent_file = 'co-dashboard';
         $submenu_file = 'co-import-export';
     }
-    // Обработка страницы редактирования викторины (edit.php?post_type=co_quiz)
     if (isset($_GET['post_type']) && $_GET['post_type'] === 'co_quiz') {
         $parent_file = 'co-dashboard';
-        $submenu_file = 'edit.php?post_type=co_question';
+        $submenu_file = 'edit.php?post_type=co_quiz';
     }
-    // Обработка страницы создания вопроса (post-new.php?post_type=co_question)
     if (isset($_GET['post_type']) && $_GET['post_type'] === 'co_question' && strpos($_SERVER['REQUEST_URI'], 'post-new.php') !== false) {
         $parent_file = 'co-dashboard';
         $submenu_file = 'edit.php?post_type=co_question';

@@ -16,11 +16,7 @@ if (!defined('ABSPATH')) {
 
 // Подключение модулей
 require_once plugin_dir_path(__FILE__) . 'includes/install.php';
-require_once plugin_dir_path(__FILE__) . 'includes/post-types.php';
-require_once plugin_dir_path(__FILE__) . 'includes/admin-menus.php';
+require_once plugin_dir_path(__FILE__) . 'includes/admin-ui.php';
 require_once plugin_dir_path(__FILE__) . 'includes/assets.php';
-require_once plugin_dir_path(__FILE__) . 'includes/shortcodes.php';
-require_once plugin_dir_path(__FILE__) . 'includes/ajax.php';
-require_once plugin_dir_path(__FILE__) . 'includes/admin-pages.php';
-require_once plugin_dir_path(__FILE__) . 'includes/metaboxes.php';
+require_once plugin_dir_path(__FILE__) . 'frontend.php';
 ?>
