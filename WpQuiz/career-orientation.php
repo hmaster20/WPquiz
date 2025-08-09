@@ -3,7 +3,7 @@
 Plugin Name: Career Orientation
 Plugin URI: https://github.com/hmaster20/WPquiz
 Description: A WordPress plugin for career orientation with weighted answers, categories, rubrics, analytics, reports, and one-time quiz links.
-Version: 1.7
+Version: 1.8
 Author: Hmaster20
 Author URI: https://github.com/hmaster20
 License: GPL2

@@ -153,9 +153,8 @@ add_action('wp_ajax_co_quiz_submission', 'co_handle_quiz_submission');
 add_action('wp_ajax_nopriv_co_quiz_submission', 'co_handle_quiz_submission');
 
 function co_handle_quiz_entry() {
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_entry_nonce')) {
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'co_quiz_nonce')) {
         wp_send_json_error(['message' => __('Invalid nonce', 'career-orientation')]);
-        error_log('Quiz entry failed: Invalid nonce');
         return;
     }
     $token = sanitize_text_field($_POST['token']);
@@ -361,7 +360,7 @@ function co_quiz_shortcode($atts) {
         ],
     ];
     error_log('Quiz data prepared for quiz_id=' . $quiz_id . ': ' . json_encode($quiz_data));
-    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . '../quiz.js', ['jquery'], '3.7', true);
+    wp_enqueue_script('co-quiz-script', plugin_dir_url(__FILE__) . 'quiz.js', ['jquery'], '3.7', true);
     wp_localize_script('co-quiz-script', 'coQuiz', $quiz_data);
     ob_start();
     ?>
@@ -395,7 +394,7 @@ function co_quiz_entry_shortcode($atts) {
         return __('This quiz link has already been used.', 'career-orientation');
     }
     $session_id = wp_generate_uuid4();
-    wp_enqueue_script('co-quiz-entry-script', plugin_dir_url(__FILE__) . '../quiz-entry.js', ['jquery'], '3.7', true);
+    wp_enqueue_script('co-quiz-entry-script', plugin_dir_url(__FILE__) . 'quiz-entry.js', ['jquery'], '3.7', true);
     wp_localize_script('co-quiz-entry-script', 'coQuizEntry', [
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('co_quiz_entry_nonce'),
