@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 require_once plugin_dir_path(__FILE__) . 'dashboard.php';
 require_once plugin_dir_path(__FILE__) . 'import-export.php';
 require_once plugin_dir_path(__FILE__) . 'career.php';
-require_once plugin_dir_path(__FILE__) . 'question-quiz.php';
+require_once plugin_dir_path(__FILE__) . 'questions.php';
 
 function co_admin_menu() {
     add_menu_page(
