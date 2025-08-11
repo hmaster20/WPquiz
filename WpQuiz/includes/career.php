@@ -2,7 +2,6 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-
 function co_unique_links_page() {
     if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.', 'career-orientation'));
@@ -57,6 +56,37 @@ function co_unique_links_page() {
             </tbody>
         </table>
     </div>
+    <script>
+        jQuery(document).ready(function($) {
+            $('.co-generate-link').click(function() {
+                var quiz_id = $('#co-quiz-select').val();
+                if (!quiz_id) {
+                    alert('<?php _e('Please select a quiz.', 'career-orientation'); ?>');
+                    return;
+                }
+                $.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'co_generate_unique_link',
+                        quiz_id: quiz_id,
+                        nonce: '<?php echo wp_create_nonce('co_generate_link_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Предполагается, что успешный ответ перезагружает страницу для отображения новой ссылки
+                            location.reload();
+                        } else {
+                            alert(response.data.message || '<?php _e('Error generating link.', 'career-orientation'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('<?php _e('Error generating link. Please try again.', 'career-orientation'); ?>');
+                    }
+                });
+            });
+        });
+    </script>
     <?php
 }
 ?>
